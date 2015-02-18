@@ -61,9 +61,9 @@ describe('Initialisation', function() {
   });
 
   // Start the router:
-  it('should when update the URL when .run() is called', function() {
+  it('should update the URL when .run() is called', function() {
     router.run();
-    assert.equal(window.location.hash, '/login');
+    assert.equal(window.location.hash, '#/login');
   });
 });
 
@@ -72,7 +72,7 @@ describe('Ascending communication', function() {
   it('should stop on the first matching case', function(done) {
     tree.set('view', 'settings').commit();
     setTimeout(function() {
-      assert.equal(window.location.hash, '/settings');
+      assert.equal(window.location.hash, '#/settings');
       assert.equal(tree.get('view'), 'settings');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -82,7 +82,7 @@ describe('Ascending communication', function() {
   it('should check all cases until one matches', function(done) {
     tree.set('view', 'home').commit();
     setTimeout(function() {
-      assert.equal(window.location.hash, '/home');
+      assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -92,7 +92,7 @@ describe('Ascending communication', function() {
   it('should not match cases where some dynamic attributes are missing', function(done) {
     tree.set('view', 'project').commit();
     setTimeout(function() {
-      assert.equal(window.location.hash, '/home');
+      assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'project');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -102,7 +102,7 @@ describe('Ascending communication', function() {
   it('should work with dynamics attributes', function(done) {
     tree.set('view', 'project').set(['data', 'pid'], '123456').commit();
     setTimeout(function() {
-      assert.equal(window.location.hash, '/project/123456');
+      assert.equal(window.location.hash, '#/project/123456');
       assert.equal(tree.get('view'), 'project');
       assert.equal(tree.get(['data', 'pid']), '123456');
       done();
@@ -112,7 +112,7 @@ describe('Ascending communication', function() {
   it('should work with dynamics attributes - bis', function(done) {
     tree.set('view', 'project.settings').set('pid', '123456').commit();
     setTimeout(function() {
-      assert.equal(window.location.hash, '/project/123456/settings');
+      assert.equal(window.location.hash, '#/project/123456/settings');
       assert.equal(tree.get('view'), 'project.settings');
       assert.equal(tree.get(['data', 'pid']), '123456');
       done();
@@ -128,9 +128,9 @@ describe('Descending communication', function() {
       .set('pid', null);
 
   it('should fallback to the default route when no route matches', function(done) {
-    window.location = '/invalid/route';
+    window.location.hash = '#/invalid/route';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/home');
+      assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -138,9 +138,9 @@ describe('Descending communication', function() {
   });
 
   it('should work fine when a route does match', function(done) {
-    window.location = '/home';
+    window.location.hash = '#/home';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/home');
+      assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -148,9 +148,9 @@ describe('Descending communication', function() {
   });
 
   it('should work fine when a route does match - bis', function(done) {
-    window.location = '/settings';
+    window.location.hash = '#/settings';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/settings');
+      assert.equal(window.location.hash, '#/settings');
       assert.equal(tree.get('view'), 'settings');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -158,9 +158,9 @@ describe('Descending communication', function() {
   });
 
   it('should work fine when a route does match - ter', function(done) {
-    window.location = '/project';
+    window.location.hash = '#/project';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/home');
+      assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get(['data', 'pid']), null);
       done();
@@ -168,9 +168,9 @@ describe('Descending communication', function() {
   });
 
   it('should work fine when a route does match with dynamic attribute', function(done) {
-    window.location = '/project/123456';
+    window.location.hash = '#/project/123456';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/project/123456');
+      assert.equal(window.location.hash, '#/project/123456');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get(['data', 'pid']), '123456');
       done();
@@ -178,9 +178,9 @@ describe('Descending communication', function() {
   });
 
   it('should work fine when a route does match with dynamic attribute - bis', function(done) {
-    window.location = '/project/123456/settings';
+    window.location.hash = '#/project/123456/settings';
     setTimeout(function() {
-      assert.equal(window.location.hash, '/project/123456/settings');
+      assert.equal(window.location.hash, '#/project/123456/settings');
       assert.equal(tree.get('view'), 'project.settings');
       assert.equal(tree.get(['data', 'pid']), '123456');
       done();
