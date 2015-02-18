@@ -1,0 +1,23 @@
+{
+  "name": "baobab-router",
+  "version": "1.0.0",
+  "description": "A router for Baobab",
+  "main": "baobab.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jacomyal/baobab-router"
+  },
+  "keywords": [
+    "baobab",
+    "router"
+  ],
+  "author": "Alexis Jacomy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jacomyal/baobab-router/issues"
+  },
+  "homepage": "https://github.com/jacomyal/baobab-router"
+}
