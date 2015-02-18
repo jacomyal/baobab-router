@@ -28,3 +28,5 @@ gulp.task('test', ['test-build'], function() {
   return gulp.src('./test/test.html')
     .pipe(mochaPhantomJS({ reporter: 'spec' }));
 });
+
+gulp.task('default', ['test']);
