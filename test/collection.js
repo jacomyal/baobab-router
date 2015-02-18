@@ -35,17 +35,17 @@ var tree = new Baobab({
       {
         route: '/project/:pid/settings',
         state: { view: 'project.settings',
-                 data: { pid: 'pid' } }
+                 data: { pid: ':pid' } }
       },
       {
         route: '/project/:pid/dashboard',
         state: { view: 'project.dashboard',
-                 data: { pid: 'pid' } }
+                 data: { pid: ':pid' } }
       },
       {
         route: '/project/:pid',
         state: { view: 'project',
-                 data: { pid: 'pid' } }
+                 data: { pid: ':pid' } }
       },
       {
         route: '/home'
