@@ -2,7 +2,7 @@
   "name": "baobab-router",
   "version": "1.0.0",
   "description": "A router for Baobab",
-  "main": "baobab.js",
+  "main": "baobab-router.js",
   "scripts": {
     "test": "gulp test"
   },
