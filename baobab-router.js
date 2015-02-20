@@ -90,6 +90,15 @@ var BaobabRouter = function(tree, routes, settings) {
         return route;
       });
 
+  // Check that there is no router already bound to this tree:
+  if (_tree.router)
+    throw(new Error('A router has already been bound to this tree.'));
+  _tree.router = this;
+
+  // Check that there is a default route:
+  if (!_defaultRoute)
+    throw(new Error('The default route is missing.'));
+
   function _onHashChange() {
     var i,
         l,
