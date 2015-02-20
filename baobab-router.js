@@ -202,6 +202,9 @@ var BaobabRouter = function(tree, routes, settings) {
 
   // Listen to the state changes:
   _tree.on('update', _onStateChange);
+
+  // Read the current state:
+  _onStateChange();
 };
 
 module.exports = BaobabRouter;
