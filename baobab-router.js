@@ -51,31 +51,6 @@ function __extractUpdates(obj, dynamics, results, path) {
   return results;
 }
 
-function __findDynamicPaths(dyn, obj, path) {
-  var k,
-      result;
-
-  if ((typeof obj === 'object') && obj) {
-    (function() {
-      for (k in obj) {
-        if (obj[k] === dyn) {
-          result = [k].concat(path || []);
-          return;
-        } else if (
-          obj[k] &&
-          (typeof obj[k] === 'object') &&
-          (tmp = __findDynamicPaths(dyn, obj[k], path || []))
-        ) {
-          result = [k].concat(tmp);
-          return;
-        }
-      }
-    })();
-  }
-
-  return result;
-}
-
 var BaobabRouter = function(tree, routes, settings) {
   var _tree = tree,
       _settings = settings || {},
