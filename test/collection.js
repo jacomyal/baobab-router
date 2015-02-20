@@ -10,14 +10,15 @@ var Baobab = require('baobab'),
 
 
 // Instanciate a Baobab tree and its related router:
-var tree = new Baobab({
+var router,
+    tree = new Baobab({
       logged: true,
       view: 'home',
       data: {
         pid: null
       }
     }),
-    router = new BaobabRouter(tree, [
+    routes = [
       {
         route: '/login',
         state: { logged: false }
@@ -53,20 +54,21 @@ var tree = new Baobab({
         state: { view: 'project',
                  data: { pid: ':pid' } }
       }
-    ]);
+    ];
 
 
 
 // Modifying the state should update the URL:
 describe('Initialisation', function() {
-  it('should not have impacted the hash yet', function() {
+  // Instanciate the router:
+  it('should update the URL when the router is instanciated', function(done) {
     assert.equal(window.location.hash, '');
-  });
+    router = new BaobabRouter(tree, routes);
 
-  // Start the router:
-  it('should update the URL when .run() is called', function() {
-    router.run();
-    assert.equal(window.location.hash, '#/login');
+    setTimeout(function() {
+      assert.equal(window.location.hash, '#/home');
+      done();
+    }, 0);
   });
 });
 
@@ -236,10 +238,38 @@ describe('API and errors', function() {
     );
   });
 
+  it('should throw an error when a router is initialized with several default routes', function() {
+    assert.throws(
+      function() {
+        var router = new BaobabRouter(
+          new Baobab({ toto: null }),
+          [ { route: '/toto', state: { toto: true }, defaultRoute: true },
+            { route: '/toto', state: { toto: true }, defaultRoute: true } ]
+        );
+      },
+      /There should be only one default route/
+    );
+  });
+
+  it('should throw an error when a route does not have any state restriction', function() {
+    assert.throws(
+      function() {
+        var router = new BaobabRouter(
+          new Baobab({ toto: null }),
+          [ { route: '/', defaultRoute: true } ]
+        );
+      },
+      /Each route should have some state restrictions/
+    );
+  });
+
   it('should throw an error when a router is bound to a tree that already has a router', function() {
     assert.throws(
       function() {
-        var router = new BaobabRouter(tree, [ { route: '/' } ]);
+        var router = new BaobabRouter(
+          tree,
+          [ { route: '/', state: {}, defaultRoute: true } ]
+        );
       },
       /A router has already been bound to this tree/
     );
