@@ -57,10 +57,10 @@ function __extractUpdates(obj, dynamics, results, path) {
 
 var BaobabRouter = function(tree, routes, settings) {
   var _cursor,
+      _stored,
       _tree = tree,
       _stateMasc = {},
       _settings = settings || {},
-      _stored = '',
       _defaultRoute,
       _routes = routes.map(function(obj) {
         var route = {
