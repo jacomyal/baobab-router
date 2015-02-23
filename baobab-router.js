@@ -115,6 +115,7 @@ var BaobabRouter = function(tree, routes, settings) {
         l,
         route,
         updates,
+        updated,
         hash = _stored;
 
     // Find which route matches:
@@ -143,9 +144,14 @@ var BaobabRouter = function(tree, routes, settings) {
     });
 
     // Apply updates:
-    for (i = 0, l = updates.length; i < l; i++)
+    for (i = 0, l = updates.length; i < l; i++) {
+      updated = true;
       _tree.select(updates[i].path).edit(updates[i].value);
-    _tree.commit();
+    }
+
+    // Commit only if something has actually been updated:
+    if (updated)
+      _tree.commit();
   }
 
   function _onStateChange() {
