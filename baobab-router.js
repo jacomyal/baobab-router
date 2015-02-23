@@ -183,7 +183,12 @@ var BaobabRouter = function(tree, routes, settings) {
   function _updateHash(hash) {
     if (_stored !== hash) {
       window.location.hash = hash;
-      window.onhashchange();
+
+      // Force execute _onHashChange:
+      if (hash !== _stored) {
+        _stored = hash;
+        _onHashChange();
+      }
     }
   }
 
