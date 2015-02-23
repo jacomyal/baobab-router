@@ -81,6 +81,11 @@ describe('Ascending communication', function() {
     setInterval(done, 0);
   });
 
+  afterEach(function(done) {
+    window.location.hash = '';
+    setInterval(done, 0);
+  });
+
   it('should not match cases where some dynamic attributes are missing', function(done) {
     tree.set('view', 'project')
         .select(['data', 'pid']).edit(null);
@@ -156,9 +161,12 @@ describe('Ascending communication', function() {
 describe('Descending communication', function() {
   beforeEach(function(done) {
     window.location.hash = '';
-    setInterval(function() {
-      done();
-    }, 0);
+    setInterval(done, 0);
+  });
+
+  afterEach(function(done) {
+    window.location.hash = '';
+    setInterval(done, 0);
   });
 
   it('should fallback to the default route when no route matches', function(done) {
