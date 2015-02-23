@@ -126,7 +126,10 @@ var BaobabRouter = function(tree, routes, settings) {
       }
 
     // Fallback on default route if not found:
-    route = route || _defaultRoute;
+    if (!route) {
+      route = _defaultRoute;
+      _stored = null;
+    }
 
     // Find updates to apply:
     updates = route.updates.map(function(obj) {
@@ -172,7 +175,11 @@ var BaobabRouter = function(tree, routes, settings) {
       }
     }
 
-    route = route || _defaultRoute;
+    // Fallback on default route if not found:
+    if (!route) {
+      route = _defaultRoute;
+      _stored = null;
+    }
 
     // Shape the hash:
     _updateHash(
