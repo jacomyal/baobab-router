@@ -33,7 +33,11 @@ function __extractUpdates(obj, dynamics, results, path) {
       result;
 
   for (i in obj) {
-    if (obj[i] && (typeof obj[i] === 'object'))
+    if (
+      obj[i] &&
+      (typeof obj[i] === 'object') &&
+      Object.keys(obj[i]).length
+    )
       __extractUpdates(
         obj[i],
         dynamics,
@@ -52,11 +56,12 @@ function __extractUpdates(obj, dynamics, results, path) {
 }
 
 var BaobabRouter = function(tree, routes, settings) {
-  var _tree = tree,
+  var _cursor,
+      _tree = tree,
+      _stateMasc = {},
       _settings = settings || {},
       _stored = '',
       _defaultRoute,
-      _cursors = [],
       _routes = routes.map(function(obj) {
         var route = {
           route: obj.route,
@@ -82,7 +87,13 @@ var BaobabRouter = function(tree, routes, settings) {
               res[obj.value] = obj.path;
             return res;
           }, {});
-          _cursors = _cursors.concat(route.updates);
+          route.updates.forEach(function(obj) {
+            obj.path.reduce(function(context, key) {
+              return (key in context) ?
+                context[key] :
+                (context[key] = {});
+            }, _stateMasc);
+          });
 
         } else
           throw(new Error('Each route should have some state restrictions.'));
@@ -201,7 +212,12 @@ var BaobabRouter = function(tree, routes, settings) {
   }
 
   // Listen to the state changes:
-  _tree.on('update', _onStateChange);
+  _cursor = __extractUpdates(_stateMasc, []).reduce(function(cursor, obj, i) {
+    return cursor ?
+      cursor.or(tree.select(obj.path)) :
+      _tree.select(obj.path);
+  }, null);
+  _cursor.on('update', _onStateChange);
 
   // Read the current state:
   _onStateChange();
