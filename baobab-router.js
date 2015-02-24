@@ -72,7 +72,7 @@ var BaobabRouter = function(tree, routes, settings) {
 
         if (obj.defaultRoute) {
           if (_defaultRoute)
-            throw(new Error('There should be only one default route.'));
+            throw (new Error('There should be only one default route.'));
           _defaultRoute = route;
         }
 
@@ -96,19 +96,19 @@ var BaobabRouter = function(tree, routes, settings) {
           });
 
         } else
-          throw(new Error('Each route should have some state restrictions.'));
+          throw (new Error('Each route should have some state restrictions.'));
 
         return route;
       });
 
   // Check that there is no router already bound to this tree:
   if (_tree.router)
-    throw(new Error('A router has already been bound to this tree.'));
+    throw (new Error('A router has already been bound to this tree.'));
   _tree.router = this;
 
   // Check that there is a default route:
   if (!_defaultRoute)
-    throw(new Error('The default route is missing.'));
+    throw (new Error('The default route is missing.'));
 
   function _onHashChange() {
     var i,
@@ -164,12 +164,14 @@ var BaobabRouter = function(tree, routes, settings) {
         match;
 
     // Find which route matches:
+    function everyCallback(obj) {
+      return obj.dynamic ?
+        !!_tree.get(obj.path) :
+        (_tree.get(obj.path) === obj.value);
+    }
+
     for (i = 0, l = _routes.length; i < l; i++) {
-      if (_routes[i].updates.every(function(obj) {
-        return obj.dynamic ?
-          !!_tree.get(obj.path) :
-          (_tree.get(obj.path) === obj.value);
-      })) {
+      if (_routes[i].updates.every(everyCallback)) {
         route = _routes[i];
         break;
       }
