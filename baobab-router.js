@@ -1,23 +1,41 @@
 'use strict';
 
+
+
+
+
+/*************************
+ * PRIVATE STATIC METHODS:
+ * ***********************
+ */
 var __solver = /^:([^\/:]*)$/g;
 
-function __checkHash(path, hash) {
+/**
+ * This function takes a route's hash (that might have some expression to solve,
+ * such as /toto/:tutu/tata or so), and an actual hash. It will then compare
+ * them to find if the hash does match.
+ *
+ * @param  {string} routeHash The route's hash.
+ * @param  {string} hash      The current hash.
+ * @return {boolean}          Returns true if the has does match the path, and
+ *                            false else.
+ */
+function __doesHashMatch(routeHash, hash) {
   var i,
       l,
       match,
-      pathArray = path.split('/'),
+      routeArray = routeHash.split('/'),
       hashArray = hash.split('/');
 
   // Check lengths:
-  if (pathArray.length !== hashArray.length)
+  if (routeArray.length !== hashArray.length)
     return false;
 
-  for (i = 0, l = pathArray.length; i < l; i++) {
-    match = pathArray[i].match(__solver);
+  for (i = 0, l = routeArray.length; i < l; i++) {
+    match = routeArray[i].match(__solver);
 
     if (
-      (!match && (pathArray[i] !== hashArray[i])) ||
+      (!match && (routeArray[i] !== hashArray[i])) ||
       (match && !hashArray[i])
     )
       return false;
@@ -26,20 +44,37 @@ function __checkHash(path, hash) {
   return true;
 }
 
-function __extractUpdates(obj, dynamics, results, path) {
+/**
+ * This function will extract from a state constraints object and a list of
+ * dynamic value names a list of paths, with the related values. The goal is to
+ * transform state contraints object into baobab compliant paths for later
+ * updates.
+ *
+ * @param  {route}  state    The state constraints to extract the paths from.
+ * @param  {array}  dynamics The array of the dynamic values names (like ":toto"
+ *                           for instance).
+ * @param  {?array} results  The results array to push the newly found paths
+ *                           into. Only used in the recursion.
+ * @param  {?array} path     The current path to use as paths prefix. Only used
+ *                           in the recursion.
+ * @return {array}           The array of every paths found, with the related
+ *                           found values and a flag specifying wether the paths
+ *                           are related to a dynamic value or not.
+ */
+function __extractPaths(state, dynamics, results, path) {
   results = results || [];
   var i,
       l,
       result;
 
-  for (i in obj) {
+  for (i in state) {
     if (
-      obj[i] &&
-      (typeof obj[i] === 'object') &&
-      Object.keys(obj[i]).length
+      state[i] &&
+      (typeof state[i] === 'object') &&
+      Object.keys(state[i]).length
     )
-      __extractUpdates(
-        obj[i],
+      __extractPaths(
+        state[i],
         dynamics,
         results,
         (path || []).concat(i)
@@ -47,15 +82,34 @@ function __extractUpdates(obj, dynamics, results, path) {
     else
       results.push({
         path: (path || []).concat(i),
-        value: obj[i],
-        dynamic: !!~dynamics.indexOf(obj[i])
+        value: state[i],
+        dynamic: !!~dynamics.indexOf(state[i])
       });
   }
 
   return results;
 }
 
+
+
+
+
+/**
+ * The baobab-router constructor. In its current state, the baobab-router does
+ * not expose anything to its public API.
+ *
+ * @param {Baobab}  tree     The Baobab instance to connect the router to.
+ * @param {Array}   routes   An array of routes. A route is an object with a
+ *                           string hash and an object that describes the state
+ *                           constraints of the route.
+ * @param {?Object} settings An optional object of settings. There are currently
+ *                           no recognized setting.
+ */
 var BaobabRouter = function(tree, routes, settings) {
+  /*********************
+   * PRIVATE ATTRIBUTES:
+   * *******************
+   */
   var _cursor,
       _stored,
       _tree = tree,
@@ -78,7 +132,7 @@ var BaobabRouter = function(tree, routes, settings) {
 
         if (obj.state) {
           route.state = obj.state;
-          route.updates = __extractUpdates(
+          route.updates = __extractPaths(
             obj.state,
             route.dynamics
           );
@@ -101,16 +155,23 @@ var BaobabRouter = function(tree, routes, settings) {
         return route;
       });
 
-  // Check that there is no router already bound to this tree:
-  if (_tree.router)
-    throw (new Error('A router has already been bound to this tree.'));
-  _tree.router = this;
 
-  // Check that there is a default route:
-  if (!_defaultRoute)
-    throw (new Error('The default route is missing.'));
 
-  function _onHashChange() {
+
+
+  /******************
+   * PRIVATE METHODS:
+   * ****************
+   */
+
+  /**
+   * This function will check the hash to find a route that matches. If none is
+   * found, then the default route will be used instead.
+   *
+   * Then, the state will be updated to match the selected route's state
+   * constraints.
+   */
+  function _checkHash() {
     var i,
         l,
         route,
@@ -120,7 +181,7 @@ var BaobabRouter = function(tree, routes, settings) {
 
     // Find which route matches:
     for (i = 0, l = _routes.length; i < l; i++)
-      if (__checkHash(_routes[i].route, hash)) {
+      if (__doesHashMatch(_routes[i].route, hash)) {
         route = _routes[i];
         break;
       }
@@ -157,7 +218,13 @@ var BaobabRouter = function(tree, routes, settings) {
       _tree.commit();
   }
 
-  function _onStateChange() {
+  /**
+   * This function will check the state to find a route with matching state
+   * constraints. If none is found, then the default route will be used instead.
+   *
+   * Then, the hash will be updated to match the selected route's one.
+   */
+  function _checkState() {
     var i,
         l,
         route,
@@ -195,17 +262,41 @@ var BaobabRouter = function(tree, routes, settings) {
     );
   }
 
+  /**
+   * This function will update the hash, and execute the _checkHash method
+   * if the new hash is different from the stored one.
+   *
+   * @param  {string} hash The new hash.
+   */
   function _updateHash(hash) {
     if (_stored !== hash) {
       window.location.hash = hash;
 
-      // Force execute _onHashChange:
+      // Force execute _checkHash:
       if (hash !== _stored) {
         _stored = hash;
-        _onHashChange();
+        _checkHash();
       }
     }
   }
+
+
+
+
+
+  /*****************
+   * INITIALIZATION:
+   * ***************
+   */
+
+  // Check that there is no router already bound to this tree:
+  if (_tree.router)
+    throw (new Error('A router has already been bound to this tree.'));
+  _tree.router = this;
+
+  // Check that there is a default route:
+  if (!_defaultRoute)
+    throw (new Error('The default route is missing.'));
 
   // Listen to the hash changes:
   if ('onhashchange' in window) {
@@ -217,7 +308,7 @@ var BaobabRouter = function(tree, routes, settings) {
       var hash = window.location.hash.replace(/^#/, '');
       if (hash !== _stored) {
         _stored = hash;
-        _onHashChange();
+        _checkHash();
       }
     };
   } else {
@@ -226,21 +317,29 @@ var BaobabRouter = function(tree, routes, settings) {
       var hash = window.location.hash.replace(/^#/, '');
       if (hash !== _stored) {
         _stored = hash;
-        _onHashChange();
+        _checkHash();
       }
     }, 100);
   }
 
   // Listen to the state changes:
-  _cursor = __extractUpdates(_stateMasc, []).reduce(function(cursor, obj, i) {
+  _cursor = __extractPaths(_stateMasc, []).reduce(function(cursor, obj, i) {
     return cursor ?
       cursor.or(tree.select(obj.path)) :
       _tree.select(obj.path);
   }, null);
-  _cursor.on('update', _onStateChange);
+  _cursor.on('update', _checkState);
 
   // Read the current state:
-  _onStateChange();
+  _checkState();
 };
 
+
+
+
+
+/****************
+ * EXPORT MODULE:
+ * **************
+ */
 module.exports = BaobabRouter;
