@@ -70,17 +70,26 @@ function example2() {
   console.log(window.location.hash === '#/project/123456');
 }
 function example3() {
-  tree.set('view', 'project.dashboard')
-      .set('projectId', '123456')
-      .commit();
+  window.location.hash = '/settings';
 
-  console.log(window.location.hash === '#/project/123456/dashboard');
+  setTimeout(function() {
+    console.log(tree.get('view') === 'settings');
+    console.log(tree.get('projectId') === null);
+  }, 0);
+}
+function example4() {
+  window.location.hash = '/project/123456';
+
+  setTimeout(function() {
+    console.log(tree.get('view') === 'project.home');
+    console.log(tree.get('projectId') === '123456');
+  }, 0);
 }
 
 // In the two following examples, the state does not match any route, so the
 // router will fallback on the default route, and update the state in
 // consequence:
-function example4() {
+function example5() {
   tree.set('view', 'something irrelevant')
       .set('projectId', '123456')
       .commit();
@@ -91,10 +100,8 @@ function example4() {
     console.log(tree.get('projectId') === null);
   }, 0);
 }
-function example5() {
-  tree.set('view', 'home')
-      .set('projectId', '123456')
-      .commit();
+function example6() {
+  window.location.hash = '/something/irrelevant';
 
   setTimeout(function() {
     console.log(window.location.hash === '#/home');
