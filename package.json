@@ -21,14 +21,14 @@
   },
   "homepage": "https://github.com/jacomyal/baobab-router",
   "devDependencies": {
-    "baobab": "^0.4.3",
+    "baobab": "^1.0.2",
     "browserify": "^8.1.3",
     "gulp": "^3.8.11",
     "gulp-gjslint": "^0.1.4",
-    "gulp-jshint": "^1.9.2",
-    "gulp-mocha-phantomjs": "^0.5.3",
-    "gulp-rename": "^1.2.0",
-    "jshint-stylish": "^1.0.0",
+    "gulp-jshint": "^1.10.0",
+    "gulp-mocha-phantomjs": "^0.6.1",
+    "gulp-rename": "^1.2.2",
+    "jshint-stylish": "^1.0.1",
     "vinyl-transform": "^1.0.0"
   }
 }
