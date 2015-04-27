@@ -2,8 +2,6 @@
 
 
 
-
-
 /*************************
  * PRIVATE STATIC METHODS:
  * ***********************
@@ -15,10 +13,19 @@ var __solver = /^:([^\/:]*)$/g;
  * such as /toto/:tutu/tata or so), and an actual hash. It will then compare
  * them to find if the hash does match.
  *
- * @param  {string} routeHash The route's hash.
- * @param  {string} hash      The current hash.
- * @return {boolean}          Returns true if the has does match the path, and
- *                            false else.
+ * Examples:
+ * *********
+ * > __doesHashMatch('/a/b/c', '/a/b/c');  // returns true
+ * > __doesHashMatch('/a/b/c', '/a/c/b');  // returns false
+ *
+ * > __doesHashMatch('/a/b', '/a/b/c');    // returns true
+ * > __doesHashMatch('/a/:b/c', '/a/b/c'); // returns true
+ * > __doesHashMatch('/a/:b', '/a/b/c');   // returns true
+ *
+ * @param  {string}  routeHash The route's hash.
+ * @param  {string}  hash      The current hash.
+ * @return {boolean}           Returns true if the hash does match the path, and
+ *                             false else.
  */
 function __doesHashMatch(routeHash, hash) {
   var i,
@@ -28,7 +35,7 @@ function __doesHashMatch(routeHash, hash) {
       hashArray = hash.split('/');
 
   // Check lengths:
-  if (routeArray.length !== hashArray.length)
+  if (routeArray.length > hashArray.length)
     return false;
 
   for (i = 0, l = routeArray.length; i < l; i++) {
@@ -42,6 +49,83 @@ function __doesHashMatch(routeHash, hash) {
   }
 
   return true;
+}
+
+/**
+ * This function takes a route's state constraints (that might have some dynamic
+ * values, such as ":tutu" or so), and the actual app state. It will then
+ * compare them to find if the hash does match, and return an object with the
+ * dynamic strings current values. It returns false if the state does not match.
+ *
+ * Scalars are compared with the "===" operator, but another test checks if both
+ * values to treat them as the same value.
+ *
+ * @param  {object}  routeState    The route's state constraints.
+ * @param  {object}  hash          The current state.
+ * @param  {array}   dynamicValues The array of the dynamic values.
+ * @return {?object}               Returns an object with the dynamic values if
+ *                                 the state does match the constraints, and
+ *                                 null else.
+ */
+function __doesStateMatch(routeState, state, dynamicValues) {
+  var k,
+      localResults,
+      results = {};
+
+  dynamicValues = dynamicValues || [];
+
+  // Arrays:
+  if (Array.isArray(routeState)) {
+    if (!Array.isArray(state) || routeState.length !== state.length)
+      return null;
+    else {
+      if (routeState.every(function(val, i) {
+        if ((localResults = __doesStateMatch(val, state[i], dynamicValues))) {
+          results = __deepMerge(results, localResults);
+          return true;
+        }
+      }))
+        return results;
+      else
+        return null;
+    }
+
+  // Objects:
+  } else if (routeState && typeof routeState === 'object') {
+    if (!state || typeof state !== 'object')
+      return null;
+    else {
+      for (k in routeState)
+        if ((localResults = __doesStateMatch(
+          routeState[k],
+          state[k],
+          dynamicValues
+        ))) {
+          results = __deepMerge(results, localResults).value;
+        } else {
+          return null;
+        }
+
+      return results
+    }
+
+  // Dynamics:
+  } else if (~dynamicValues.indexOf(routeState)) {
+    results[routeState] = state;
+    return results;
+
+  // Null / undefined cases:
+  } else if (
+    (routeState === undefined || routeState === null) &&
+    (state === undefined || state === null)
+  ) {
+    return results;
+
+  // Other scalars:
+  } else if (routeState === state)
+    return results;
+
+  return null;
 }
 
 /**
@@ -63,6 +147,8 @@ function __doesHashMatch(routeHash, hash) {
  */
 function __extractPaths(state, dynamics, results, path) {
   results = results || [];
+  dynamics = dynamics || [];
+
   var i,
       l,
       result;
@@ -90,6 +176,226 @@ function __extractPaths(state, dynamics, results, path) {
   return results;
 }
 
+/**
+ * This function will build the routes tree, formed for BaobabRouter. It will do
+ * the following things, and then execute recursively on the children routes:
+ *
+ *   - Check default routes validity (must match a child's path)
+ *   - Retrieve for each route the list of related paths
+ *   - Detect sub-routes overriding a parent's state
+ *   - Detect dynamic patterns in routes
+ *
+ * The function identifies the tree's root when no baseState and no basePath are
+ * given.
+ *
+ * @param  {object}  route     The input route object.
+ * @param  {?object} baseState The optional base state, ie the recursively
+ *                             merged state of the route's parents.
+ * @param  {?string} basePath  The optional base path, ie the recursively
+ *                             concatenated path of the route's parents.
+ * @return {route}             The well-formed route object.
+ */
+function __makeRoutes(route, baseState, basePath) {
+  var mergedState = __deepMerge(baseState || {}, route.state || {});
+
+  basePath = basePath || '';
+
+  route.path = route.path || '';
+  route.fullState = mergedState.value;
+  route.overrides = mergedState.conflicts;
+  route.dynamics = route.path ?
+    (basePath + route.path).split('/').filter(function(str) {
+      return str.match(__solver);
+    }) :
+    [];
+  route.updates = __extractPaths(route.fullState, route.dynamics);
+
+  if (route.routes)
+    route.routes = route.routes.map(function(child) {
+      return __makeRoutes(child, route.fullState, basePath + route.path);
+    });
+
+  route.overrides = route.overrides || (route.routes || []).some(function(child) {
+    return child.overrides;
+  });
+
+  // Check that default route is valid:
+  if (
+    route.defaultRoute &&
+    !route.routes.some(function(child) {
+      return __doesHashMatch(child.path, route.defaultRoute);
+    })
+  )
+      throw (new Error(
+        'BaobabRouter.__makeRoutes: ' +
+        'The default route "' + route.defaultRoute + '" does not match any ' +
+        'registered route.'
+      ));
+
+  // Some root-specific verifications:
+  if (arguments.length === 1) {
+    route.path = route.path || '';
+    route.readOnly = route.readOnly || [];
+
+    // The root must have a default route:
+    if (!route.defaultRoute)
+      throw (new Error(
+        'BaobabRouter.__makeRoutes: ' +
+        'The default route is missing.'
+      ));
+  }
+
+  // Each route must have some state restriction (except for the root):
+  if (arguments.length > 1 && !route.updates.length)
+    throw (new Error(
+      'BaobabRouter.__makeRoutes: ' +
+      'Each route should have some state restrictions.'
+    ));
+
+  return route;
+}
+
+/**
+ * This function will merge multiple objects into one. Each object will
+ * overrides the previous ones. Also, this function will return an object with
+ * two keys: "value" contains the new object, and "conflicts" is a flag
+ * specifying wether some paths contain different values in different objects.
+ *
+ * Examples:
+ * *********
+ * > var a = { key: 'value' },
+ * >     b = __deepMerge(a);
+ * > a === b; // false
+ * > b.key;   // 'value'
+ *
+ * > __deepMerge(
+ * >   { a: 1 },
+ * >   { b: 1 },
+ * >   { c: 1 }
+ * > );
+ * > // { a: 1, b: 1, c: 1 }
+ *
+ * > __deepMerge(
+ * >   { a: 1 },
+ * >   { a: 2 },
+ * >   { a: 3 }
+ * > );
+ * > // { a: 3 }
+ *
+ * @params {object*} objects The objects to merge.
+ * @return {object}          An object containing the merged object under the
+ *                           key "value", and a flag specifying if some keys
+ *                           where having different values in the different
+ *                           arguments, under the key "conflicts".
+ */
+function __deepMerge() {
+  var i,
+      k,
+      l,
+      obj,
+      res,
+      merged,
+      conflicts = false;
+
+  for (i = 0, l = arguments.length; i < l; i++) {
+    obj = arguments[i];
+
+    if (obj && typeof obj === 'object') {
+      if (!res)
+        res = Array.isArray(obj) ? [] : {};
+
+      for (k in obj) {
+        merged = __deepMerge(res[k], obj[k]);
+        conflicts = conflicts || merged.conflicts;
+        res[k] = merged.value;
+      }
+
+    } else {
+      if (res !== undefined && res !== obj)
+        conflicts = true;
+      res = obj;
+    }
+  }
+
+  return {
+    value: res,
+    conflicts: conflicts
+  };
+}
+
+/**
+ * This function compares two arrays (usually two paths for Baobab), and returns
+ * true if they have the same length and equals elements in the same order.
+ *
+ * @param  {array}   a1 The first array.
+ * @param  {array}   a2 The second array.
+ * @return {boolean}    True if the values are equals, false else.
+ */
+function __compareArrays(a1, a2) {
+  var i,
+      l = a1.length;
+
+  if (
+    !Array.isArray(a1) ||
+    !Array.isArray(a2) ||
+    l !== a2.length
+  )
+    return false;
+
+  for (i = 0; i < l; i++)
+    if (a1[i] !== a2[i])
+      return false;
+
+  return true;
+}
+
+/**
+ * This function takes a well formed URL from any BaobabRouter instance's route,
+ * with potentially dynamic attributes to resolve, and a object with the related
+ * values, and returns the URL with the values inserted instead of the dynamics.
+ *
+ * Examples:
+ * *********
+ * > __resolveURL('a/b/c'); // same as __resolveURL('a/b/c', {});
+ * > // 'a/b/c' (nothing to solve)
+ *
+ * > __resolveURL('a/:b/c/:d', { ':b': 'B', ':d': 'D' });
+ * > // 'a/B/c/D'
+ *
+ * > __resolveURL('a/:b/:b', { ':b': 'B' });
+ * > // 'a/B/B'
+ *
+ * > __resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' });
+ * > // 'a/:b/C'
+ *
+ * @param  {string}  url The URL to resolve.
+ * @param  {?object} obj An optional object with the dynamic values to insert.
+ * @return {string}      The resolved URL.
+ */
+function __resolveURL(url, obj) {
+  obj = obj || {};
+
+  return url.split('/').map(function(s) {
+    return obj.hasOwnProperty(s) ? obj[s] : s;
+  }).join('/');
+}
+
+/**
+ * This function builds a proper path from a route's path and its parents paths.
+ *
+ * Examples:
+ * *********
+ * > __correctPath('/a', '/b');  // '/a/b'
+ * > __correctPath('/a/', '/b'); // '/a/b'
+ * > __correctPath('/a', '');    // '/a'
+ *
+ * @param  {string} basePath  The clean URL of the route's parent.
+ * @param  {string} localPath The route's path.
+ * @return {string}           The cleaned path.
+ */
+function __correctPath(basePath, localPath) {
+  return ((basePath || '') + (localPath || '')).replace(/^\/\/+/, '/');
+}
 
 
 
@@ -99,61 +405,26 @@ function __extractPaths(state, dynamics, results, path) {
  * not expose anything to its public API.
  *
  * @param {Baobab}  tree     The Baobab instance to connect the router to.
- * @param {Array}   routes   An array of routes. A route is an object with a
- *                           string hash and an object that describes the state
- *                           constraints of the route.
+ * @param {Object}  routes   The routes tree. It must have a defaultRoute string
+ *                           and a routes array.
  * @param {?Object} settings An optional object of settings. There are currently
  *                           no recognized setting.
  */
 var BaobabRouter = function(tree, routes, settings) {
+
   /*********************
    * PRIVATE ATTRIBUTES:
    * *******************
    */
-  var _cursor,
-      _stored,
+
+  var _facet,
+      _hashInterval,
+      _hashListener,
+      _stateListener,
       _tree = tree,
-      _stateMasc = {},
       _settings = settings || {},
-      _defaultRoute,
-      _routes = routes.map(function(obj) {
-        var route = {
-          route: obj.route,
-          dynamics: obj.route.split('/').filter(function(str) {
-            return str.match(__solver);
-          })
-        };
-
-        if (obj.defaultRoute) {
-          if (_defaultRoute)
-            throw (new Error('There should be only one default route.'));
-          _defaultRoute = route;
-        }
-
-        if (obj.state) {
-          route.state = obj.state;
-          route.updates = __extractPaths(
-            obj.state,
-            route.dynamics
-          );
-          route.dynamicUpdates = route.updates.reduce(function(res, obj) {
-            if (obj.dynamic)
-              res[obj.value] = obj.path;
-            return res;
-          }, {});
-          route.updates.forEach(function(obj) {
-            obj.path.reduce(function(context, key) {
-              return (key in context) ?
-                context[key] :
-                (context[key] = {});
-            }, _stateMasc);
-          });
-
-        } else
-          throw (new Error('Each route should have some state restrictions.'));
-
-        return route;
-      });
+      _stored = window.location.hash.replace(/^#/, ''),
+      _routesTree = __makeRoutes(__deepMerge(routes).value);
 
 
 
@@ -165,101 +436,145 @@ var BaobabRouter = function(tree, routes, settings) {
    */
 
   /**
-   * This function will check the hash to find a route that matches. If none is
-   * found, then the default route will be used instead.
+   * This function will recursively check the hash to find a route that matches.
+   * If none is found, then the default route will be used instead.
    *
    * Then, the state will be updated to match the selected route's state
    * constraints.
    */
-  function _checkHash() {
-    var i,
-        l,
-        route,
-        updates,
-        updated,
-        hash = _stored;
+  function _checkHash(hash, basePath, baseRoute) {
+    var match,
+        doCommit,
+        path = basePath || '',
+        route = baseRoute || _routesTree,
+        correctedPath = __correctPath(path, route.path),
+        correctedDefaultPath = __correctPath(path, route.defaultRoute);
 
-    // Find which route matches:
-    for (i = 0, l = _routes.length; i < l; i++)
-      if (__doesHashMatch(_routes[i].route, hash)) {
-        route = _routes[i];
-        break;
-      }
+    // Check if route match:
+    match = __doesHashMatch(correctedPath, hash);
+    if (!match)
+      return false;
 
-    // Fallback on default route if not found:
-    if (!route) {
-      route = _defaultRoute;
-      _stored = null;
+    // Check if a child does match (without using default values):
+    if (
+      route.routes &&
+      route.routes.some(function(child) {
+        return _checkHash(hash, correctedPath, child);
+      })
+    )
+      return true;
+
+    // If there is a default route, check which route it does match:
+    if (match && route.defaultRoute) {
+      _updateHash(correctedDefaultPath);
+      return true;
     }
 
-    // Find updates to apply:
-    updates = route.updates.map(function(obj) {
-      var result = {
-        path: obj.path,
-        value: obj.value
-      };
+    // If the route matched and has no default route:
+    if (match && !route.defaultRoute) {
+      // Apply updates:
+      route.updates.map(function(obj) {
+        var update = {
+          path: obj.path,
+          value: obj.value
+        };
 
-      if (obj.dynamic)
-        result.value = hash.split('/')[
-          route.route.split('/').indexOf(result.value)
-        ];
+        if (obj.dynamic)
+          update.value = hash.split('/')[
+            correctedPath.split('/').indexOf(update.value)
+          ];
 
-      return result;
-    });
+        if (!_routesTree.readOnly.some(function(path) {
+          return __compareArrays(update.path, path);
+        })) {
+          _tree.set(update.path, update.value);
+          doCommit = true;
+        }
+      });
 
-    // Apply updates:
-    for (i = 0, l = updates.length; i < l; i++) {
-      updated = true;
-      _tree.select(updates[i].path).edit(updates[i].value);
+      // Commit only if something has actually been updated:
+      if (doCommit)
+        _tree.commit();
+
+      return true;
     }
-
-    // Commit only if something has actually been updated:
-    if (updated)
-      _tree.commit();
   }
 
   /**
-   * This function will check the state to find a route with matching state
-   * constraints. If none is found, then the default route will be used instead.
+   * This function will recursively check the state to find a route with
+   * matching state constraints. If none is found, then the default route will
+   * be used instead.
    *
    * Then, the hash will be updated to match the selected route's one.
    */
-  function _checkState() {
-    var i,
-        l,
-        route,
-        match;
+  function _checkState(basePath, baseRoute, baseState) {
+    var k,
+        match,
+        path = basePath || '',
+        state = baseState || _tree.get(),
+        route = baseRoute || _routesTree,
+        correctedPath = __correctPath(path, route.path),
+        correctedDefaultPath = __correctPath(path, route.defaultRoute);
 
-    // Find which route matches:
-    function everyCallback(obj) {
-      return obj.dynamic ?
-        !!_tree.get(obj.path) :
-        (_tree.get(obj.path) === obj.value);
-    }
+    // Check if route match:
+    match = baseState ?
+      __doesStateMatch(state, route.fullState, route.dynamics) :
+      __doesStateMatch(route.fullState, state, route.dynamics);
+    if (!match && arguments.length > 0 && !route.overrides)
+      return false;
 
-    for (i = 0, l = _routes.length; i < l; i++) {
-      if (_routes[i].updates.every(everyCallback)) {
-        route = _routes[i];
-        break;
-      }
-    }
+    // Check if a child does match:
+    if (
+      route.routes &&
+      route.routes.some(function(child) {
+        return _checkState(correctedPath, child);
+      })
+    )
+      return true;
 
-    // Fallback on default route if not found:
-    if (!route) {
-      route = _defaultRoute;
+    // If the root route did not find any match, let's compare the tree with
+    // only the read-only restrictions:
+    if (!arguments.length) {
       _stored = null;
+
+      var restrictedState = __extractPaths(state).filter(function(obj) {
+        return _routesTree.readOnly.some(function(path) {
+          return __compareArrays(obj.path, path);
+        })
+      }).reduce(function(res, obj) {
+        obj.path.reduce(function(localState, string, i) {
+          if (i === obj.path.length - 1)
+            localState[string] = obj.value;
+          else
+            localState[string] =
+              localState[string] ||
+              ( typeof obj.path[i + 1] === 'number' ?
+                  [] :
+                  {} );
+
+          return localState[string];
+        }, res);
+        return res;
+      }, {});
+
+      if (
+        route.routes.some(function(child) {
+          return _checkState(correctedPath, child, restrictedState);
+        })
+      )
+        return true;
     }
 
-    // Shape the hash:
-    _updateHash(
-      route.dynamics.length ?
-        route.route.split('/').map(function(str, i) {
-          return str.match(__solver) ?
-            _tree.get(route.dynamicUpdates[str]) :
-            str;
-        }).join('/') :
-        route.route
-    );
+    if (match) {
+      _updateHash(__resolveURL(
+        route.defaultRoute ?
+          correctedDefaultPath :
+          correctedPath,
+        match
+      ));
+
+      return true;
+    }
   }
 
   /**
@@ -275,9 +590,30 @@ var BaobabRouter = function(tree, routes, settings) {
       // Force execute _checkHash:
       if (hash !== _stored) {
         _stored = hash;
-        _checkHash();
+        _checkHash(_stored);
       }
     }
+  }
+
+
+
+
+
+  /*****************
+   * PUBLIC METHODS:
+   * ***************
+   */
+  function kill() {
+    // Hash update capture:
+    if (_hashListener)
+      window.removeEventListener('hashchange', _hashListener, false);
+    else if (_hashInterval)
+      window.clearInterval(_hashInterval);
+
+    // Unbind the tree:
+    // _facet.off(_stateListener);
+    _facet.release();
+    _tree.router = null;
   }
 
 
@@ -291,51 +627,72 @@ var BaobabRouter = function(tree, routes, settings) {
 
   // Check that there is no router already bound to this tree:
   if (_tree.router)
-    throw (new Error('A router has already been bound to this tree.'));
+    throw (new Error(
+      'BaobabRouter (constructor): ' +
+      'A router has already been bound to this tree.'
+    ));
   _tree.router = this;
-
-  // Check that there is a default route:
-  if (!_defaultRoute)
-    throw (new Error('The default route is missing.'));
 
   // Listen to the hash changes:
   if ('onhashchange' in window) {
-    var _formerHandler = window.onhashchange;
-    window.onhashchange = function() {
-      if (typeof _formerHandler === 'function')
-        _formerHandler.apply(this, arguments);
-
+    _hashListener = function() {
       var hash = window.location.hash.replace(/^#/, '');
       if (hash !== _stored) {
         _stored = hash;
-        _checkHash();
+        _checkHash(_stored);
       }
     };
+
+    window.addEventListener('hashchange', _hashListener, false);
   } else {
     _stored = window.location.hash;
-    window.setInterval(function() {
+    _hashInterval = window.setInterval(function() {
       var hash = window.location.hash.replace(/^#/, '');
       if (hash !== _stored) {
         _stored = hash;
-        _checkHash();
+        _checkHash(_stored);
       }
     }, 100);
   }
 
   // Listen to the state changes:
-  _cursor = __extractPaths(_stateMasc, []).reduce(function(cursor, obj, i) {
-    return cursor ?
-      cursor.or(tree.select(obj.path)) :
-      _tree.select(obj.path);
-  }, null);
-  _cursor.on('update', _checkState);
+  _facet = _tree.createFacet({
+    cursors: __extractPaths(
+      _routesTree.routes.reduce(
+        function _extract(arr, child) {
+          return (child.routes || []).reduce(
+            _extract,
+            arr.concat(child.updates.map(function(obj) {
+              return obj.path;
+            }))
+          );
+        },
+        []
+      ).reduce(function(context, path) {
+        path.reduce(function(localContext, key) {
+          return (key in localContext) ?
+            localContext[key] :
+            (localContext[key] = {});
+        }, context);
+        return context;
+      }, {}),
+      []
+    ).reduce(function(result, obj, i) {
+      result['path_' + i] = obj.path;
+      return result;
+    }, {})
+  });
 
-  // Read the current state:
-  _checkState();
+  _facet.on('update', function() {
+    _checkState();
+  });
+
+  // Export publics:
+  this.kill = kill;
+
+  // Read the current hash:
+  _checkHash(_stored);
 };
-
-
-
 
 
 /****************
