@@ -47,7 +47,9 @@ gulp.task('test-build', function() {
       .bundle();
   });
 
-  return gulp.src('./test/collection.js')
+  return gulp.src([
+      './test/collections.js'
+    ])
     .pipe(bundle)
     .pipe(rename('test.js'))
     .pipe(gulp.dest('./test/build'));

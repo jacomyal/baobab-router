@@ -10,53 +10,58 @@ var Baobab = require('baobab'),
 
 
 // Instanciate a Baobab tree and its related router:
-var router,
-    tree = new Baobab({
+var unloggedState = {
       logged: false,
+      view: null,
+      data: {
+        pid: null
+      }
+    },
+    loggedState = {
+      logged: true,
       view: 'home',
       data: {
         pid: null
       }
-    }),
+    },
     routes = {
-      defaultRoute: 'home',
+      defaultRoute: '/login',
       readOnly: [['logged']],
       routes: [
         {
-          path: 'login',
-          state: { logged: false }
+          path: '/login',
+          state: { view: 'login',
+                   logged: false,
+                   data: { pid: null } }
         },
         {
-          path: 'home',
-          state: { view: 'home',
-                   logged: true,
-                   pid: null }
-        },
-        {
-          path: 'settings',
-          state: { view: 'settings',
-                   logged: true,
-                   pid: null }
-        },
-        {
-          path: 'projects',
-          state: { view: 'projects',
-                   logged: true,
-                   pid: null }
-        },
-        {
-          path: 'project/:pid',
-          state: { view: 'project',
-                   logged: true,
-                   data: { pid: ':pid' } },
+          path: '',
+          state: { logged: true,
+                   data: { pid: null } },
+          defaultRoute: '/home',
           routes: [
             {
-              path: 'settings',
-              state: { view: 'project.settings' }
+              path: '/home',
+              state: { view: 'home' }
             },
             {
-              path: 'dashboard',
-              state: { view: 'project.dashboard' }
+              path: '/settings',
+              state: { view: 'settings', }
+            },
+            {
+              path: '/project/:pid',
+              state: { view: 'project',
+                       data: { pid: ':pid' } },
+              routes: [
+                {
+                  path: '/settings',
+                  state: { view: 'project.settings' }
+                },
+                {
+                  path: '/dashboard',
+                  state: { view: 'project.dashboard' }
+                }
+              ]
             }
           ]
         }
@@ -65,16 +70,36 @@ var router,
 
 
 
-// Modifying the state should update the URL:
-describe('Initialisation', function() {
-  // Instanciate the router:
-  it('should update the URL when the router is instanciated', function(done) {
+function _newTree(state) {
+  return new Baobab(state || loggedState);
+}
+
+function _newRouter(tree) {
+  return new BaobabRouter(tree || _newTree(), routes);
+}
+
+
+
+describe('Instanciation and destruction:', function() {
+  var tree,
+      router;
+
+  afterEach(function(done) {
+    router.kill();
+    window.location.hash = '';
+    router = null;
+
+    setInterval(done, 0);
+  });
+
+  it('it should update the URL when the router is instanciated', function(done) {
     assert.equal(window.location.hash, '');
-    router = new BaobabRouter(tree, routes);
+    tree = _newTree();
+    router = _newRouter(tree);
 
     setTimeout(function() {
-      assert.equal(window.location.hash, '#/login');
-      assert.equal(tree.get('view'), 'login');
+      assert.equal(window.location.hash, '#/home');
+      assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('data', 'pid'), null);
       done();
     }, 0);
@@ -83,35 +108,30 @@ describe('Initialisation', function() {
 
 
 
-// Modifying the state should update the URL:
 describe('Ascending communication', function() {
+  var tree,
+      router;
+
   beforeEach(function(done) {
     window.location.hash = '';
+    tree = _newTree();
+    router = _newRouter(tree);
+
     setInterval(done, 0);
   });
 
   afterEach(function(done) {
+    router.kill();
     window.location.hash = '';
+    router = null;
+
     setInterval(done, 0);
   });
 
-  it('should not match cases where some dynamic attributes are missing', function(done) {
-    tree.set('logged', true)
-        .set('view', 'project')
-        .select('data', 'pid').edit(null);
-    tree.commit();
-
-    assert.equal(window.location.hash, '#/home');
-    assert.equal(tree.get('view'), 'home');
-    assert.equal(tree.get('data', 'pid'), null);
-
-    setTimeout(function() {
-      done();
-    }, 0);
-  });
-
   it('should stop on the first matching case', function(done) {
-    tree.set('view', 'settings')
+    tree.set('logged', true)
+        .set('view', 'settings')
+        .set(['data', 'pid'], null)
         .commit();
 
     assert.equal(window.location.hash, '#/settings');
@@ -124,7 +144,9 @@ describe('Ascending communication', function() {
   });
 
   it('should check all cases until one matches', function(done) {
-    tree.set('view', 'home')
+    tree.set('logged', true)
+        .set('view', 'home')
+        .set(['data', 'pid'], null)
         .commit();
 
     assert.equal(window.location.hash, '#/home');
@@ -137,9 +159,10 @@ describe('Ascending communication', function() {
   });
 
   it('should work with dynamics attributes', function(done) {
-    tree.set('view', 'project')
-        .select('data', 'pid').edit('123456')
-    tree.commit();
+    tree.set('logged', true)
+        .set('view', 'project')
+        .set(['data', 'pid'], '123456')
+        .commit();
 
     assert.equal(window.location.hash, '#/project/123456');
     assert.equal(tree.get('view'), 'project');
@@ -151,9 +174,10 @@ describe('Ascending communication', function() {
   });
 
   it('should work with children overriding values', function(done) {
-    tree.set('view', 'project.settings')
-        .select('data', 'pid').edit('123456')
-    tree.commit();
+    tree.set('logged', true)
+        .set('view', 'project.settings')
+        .set(['data', 'pid'], '123456')
+        .commit();
 
     assert.equal(window.location.hash, '#/project/123456/settings');
     assert.equal(tree.get('view'), 'project.settings');
@@ -163,24 +187,48 @@ describe('Ascending communication', function() {
       done();
     }, 0);
   });
+
+  it('should not match cases where some dynamic attributes are missing', function(done) {
+    tree.set('logged', true)
+        .set('view', 'project')
+        .set(['data', 'pid'], null)
+        .commit();
+
+    assert.equal(window.location.hash, '#/home');
+    assert.equal(tree.get('view'), 'home');
+    assert.equal(tree.get('data', 'pid'), null);
+
+    setTimeout(function() {
+      done();
+    }, 0);
+  });
 });
 
 
 
-// Modifying the URL should update the state, and eventually reupdate the URL:
 describe('Descending communication', function() {
+  var tree,
+      router;
+
   beforeEach(function(done) {
     window.location.hash = '';
+    tree = _newTree();
+    router = _newRouter(tree);
+
     setInterval(done, 0);
   });
 
   afterEach(function(done) {
+    router.kill();
     window.location.hash = '';
+    router = null;
+
     setInterval(done, 0);
   });
 
   it('should fallback to the default route when no route matches', function(done) {
     window.location.hash = '#/invalid/route';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
@@ -191,6 +239,7 @@ describe('Descending communication', function() {
 
   it('should fallback to the default route when no route matches - bis', function(done) {
     window.location.hash = '#/project';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
@@ -201,6 +250,7 @@ describe('Descending communication', function() {
 
   it('should work fine when a route does match', function(done) {
     window.location.hash = '#/home';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
@@ -211,6 +261,7 @@ describe('Descending communication', function() {
 
   it('should work fine when a route does match - bis', function(done) {
     window.location.hash = '#/settings';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/settings');
       assert.equal(tree.get('view'), 'settings');
@@ -221,6 +272,7 @@ describe('Descending communication', function() {
 
   it('should work fine when a route does match with dynamic attribute', function(done) {
     window.location.hash = '#/project/123456';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/project/123456');
       assert.equal(tree.get('view'), 'project');
@@ -231,6 +283,7 @@ describe('Descending communication', function() {
 
   it('should work fine when a route does match with dynamic attribute - bis', function(done) {
     window.location.hash = '#/project/123456/settings';
+
     setTimeout(function() {
       assert.equal(window.location.hash, '#/project/123456/settings');
       assert.equal(tree.get('view'), 'project.settings');
@@ -242,7 +295,56 @@ describe('Descending communication', function() {
 
 
 
-// API and errors:
+describe('Read-only state constraints', function() {
+  var tree,
+      router;
+
+  beforeEach(function(done) {
+    window.location.hash = '';
+    tree = _newTree(unloggedState);
+    router = _newRouter(tree);
+
+    setInterval(done, 0);
+  });
+
+  afterEach(function(done) {
+    router.kill();
+    window.location.hash = '';
+    router = null;
+
+    setInterval(done, 0);
+  });
+
+  it('should fallback on a route with the good values for read-only constraints (ascending)', function(done) {
+    tree.set('logged', false)
+        .set('view', 'home')
+        .set(['data', 'pid'], null)
+        .commit();
+
+    setTimeout(function() {
+      assert.equal(window.location.hash, '#/login');
+      assert.equal(tree.get('logged'), false);
+      assert.equal(tree.get('view'), 'login');
+      assert.equal(tree.get('data', 'pid'), null);
+      done();
+    }, 0);
+  });
+
+  it('should fallback on a route with the good values for read-only constraints (descending)', function(done) {
+    window.location.hash = '#/home';
+
+    setTimeout(function() {
+      assert.equal(window.location.hash, '#/login');
+      assert.equal(tree.get('logged'), false);
+      assert.equal(tree.get('view'), 'login');
+      assert.equal(tree.get('data', 'pid'), null);
+      done();
+    }, 0);
+  });
+});
+
+
+
 describe('API and errors', function() {
   it('should throw an error when a router is initialized without default route', function() {
     assert.throws(
@@ -273,21 +375,19 @@ describe('API and errors', function() {
       function() {
         var router = new BaobabRouter(
           new Baobab({ toto: null }),
-          { routes: [ { route: 'app' } ], defaultRoute: 'somethingElse' }
+          { routes: [ { route: 'app', state: { key: 'value' } } ], defaultRoute: 'somethingElse' }
         );
       },
-      /The default route does not match any registered route/
+      /The default route "somethingElse" does not match any registered route/
     );
   });
 
   it('should throw an error when a router is bound to a tree that already has a router', function() {
+    var tree = _newTree(),
+        router1 = _newRouter(tree);
+
     assert.throws(
-      function() {
-        var router = new BaobabRouter(
-          tree,
-          { routes: [ { route: 'app', state: {} } ], defaultRoute: 'app' }
-        );
-      },
+      function() { _newRouter(tree); },
       /A router has already been bound to this tree/
     );
   });
