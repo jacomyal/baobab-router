@@ -695,6 +695,16 @@ var BaobabRouter = function(tree, routes, settings) {
 };
 
 
+BaobabRouter.__doesHashMatch = __doesHashMatch;
+BaobabRouter.__doesStateMatch = __doesStateMatch;
+BaobabRouter.__extractPaths = __extractPaths;
+BaobabRouter.__makeRoutes = __makeRoutes;
+BaobabRouter.__deepMerge = __deepMerge;
+BaobabRouter.__compareArrays = __compareArrays;
+BaobabRouter.__resolveURL = __resolveURL;
+BaobabRouter.__correctPath = __correctPath;
+
+
 /****************
  * EXPORT MODULE:
  * **************
