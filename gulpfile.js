@@ -62,4 +62,4 @@ gulp.task('test', ['test-build'], function() {
 
 
 
-gulp.task('default', ['test']);
+gulp.task('default', ['lint', 'test']);
