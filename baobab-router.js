@@ -6,7 +6,7 @@
  * PRIVATE STATIC METHODS:
  * ***********************
  */
-var __solver = /^:([^\/:]*)$/g;
+var __solver = /:([^\/:]*)/g;
 
 /**
  * This function takes a route's hash (that might have some expression to solve,
@@ -201,14 +201,14 @@ function __makeRoutes(route, baseState, basePath) {
   basePath = basePath || '';
 
   route.path = route.path || '';
+  route.fullPath = __correctPath(basePath, route.path);
   route.fullState = mergedState.value;
   route.overrides = mergedState.conflicts;
-  route.dynamics = route.path ?
-    (basePath + route.path).split('/').filter(function(str) {
-      return str.match(__solver);
-    }) :
-    [];
+  route.dynamics = route.fullPath.match(__solver) || [];
   route.updates = __extractPaths(route.fullState, route.dynamics);
+
+  if (route.defaultRoute)
+    route.fullDefaultPath = __correctPath(route.fullPath, route.defaultRoute);
 
   if (route.routes)
     route.routes = route.routes.map(function(child) {
@@ -448,12 +448,10 @@ var BaobabRouter = function(tree, routes, settings) {
     var match,
         doCommit,
         path = basePath || '',
-        route = baseRoute || _routesTree,
-        correctedPath = __correctPath(path, route.path),
-        correctedDefaultPath = __correctPath(path, route.defaultRoute);
+        route = baseRoute || _routesTree;
 
     // Check if route match:
-    match = __doesHashMatch(correctedPath, hash);
+    match = __doesHashMatch(route.fullPath, hash);
     if (!match)
       return false;
 
@@ -461,14 +459,14 @@ var BaobabRouter = function(tree, routes, settings) {
     if (
       route.routes &&
       route.routes.some(function(child) {
-        return _checkHash(hash, correctedPath, child);
+        return _checkHash(hash, route.fullPath, child);
       })
     )
       return true;
 
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
-      _updateHash(correctedDefaultPath);
+      _updateHash(route.fullDefaultPath);
       return true;
     }
 
@@ -483,7 +481,7 @@ var BaobabRouter = function(tree, routes, settings) {
 
         if (obj.dynamic)
           update.value = hash.split('/')[
-            correctedPath.split('/').indexOf(update.value)
+            route.fullPath.split('/').indexOf(update.value)
           ];
 
         if (!_routesTree.readOnly.some(function(path) {
@@ -514,9 +512,7 @@ var BaobabRouter = function(tree, routes, settings) {
         match,
         path = basePath || '',
         state = baseState || _tree.get(),
-        route = baseRoute || _routesTree,
-        correctedPath = __correctPath(path, route.path),
-        correctedDefaultPath = __correctPath(path, route.defaultRoute);
+        route = baseRoute || _routesTree;
 
     // Check if route match:
     match = baseState ?
@@ -529,7 +525,7 @@ var BaobabRouter = function(tree, routes, settings) {
     if (
       route.routes &&
       route.routes.some(function(child) {
-        return _checkState(correctedPath, child);
+        return _checkState(route.fullPath, child);
       })
     )
       return true;
@@ -563,7 +559,7 @@ var BaobabRouter = function(tree, routes, settings) {
 
       if (
         route.routes.some(function(child) {
-          return _checkState(correctedPath, child, restrictedState);
+          return _checkState(route.fullPath, child, restrictedState);
         })
       )
         return true;
@@ -572,8 +568,8 @@ var BaobabRouter = function(tree, routes, settings) {
     if (match) {
       _updateHash(__resolveURL(
         route.defaultRoute ?
-          correctedDefaultPath :
-          correctedPath,
+          route.fullDefaultPath :
+          route.fullPath,
         match
       ));
 

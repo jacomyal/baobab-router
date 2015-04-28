@@ -177,6 +177,8 @@ describe('BaobabRouter.__makeRoutes', function() {
           fullState: {},
           overrides: false,
           path: '',
+          fullPath: '',
+          fullDefaultPath: '/route_A1',
 
           routes: [
             // Simple route:
@@ -187,6 +189,7 @@ describe('BaobabRouter.__makeRoutes', function() {
 
               // ADDED:
               dynamics: [],
+              fullPath: '/route_A1',
               overrides: false,
               fullState:
                 { state_a1: { state_b1: 'A1, a1.b1' },
@@ -203,6 +206,7 @@ describe('BaobabRouter.__makeRoutes', function() {
 
               // ADDED:
               dynamics: [],
+              fullPath: '/route_A2',
               overrides: false,
               fullState: { state_a2: 'A2, a2' },
               updates: [
@@ -216,6 +220,7 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                   // ADDED:
                   dynamics: [],
+                  fullPath: '/route_A2/route_B1',
                   overrides: false,
                   fullState:
                     { state_a1: { state_b1: 'A2.B1, a1.b1' },
@@ -231,6 +236,7 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                   // ADDED:
                   overrides: false,
+                  fullPath: '/route_A2/:route_dyn_B2',
                   dynamics: [':route_dyn_B2'],
                   fullState:
                     { state_a1: { state_b1: ':route_dyn_B2' },
@@ -246,6 +252,7 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                       // ADDED:
                       overrides: false,
+                      fullPath: '/route_A2/:route_dyn_B2/route_dyn_C1',
                       dynamics: [':route_dyn_B2'],
                       fullState:
                         { state_a1: { state_b1: ':route_dyn_B2' },
