@@ -106,7 +106,7 @@ function __doesStateMatch(routeState, state, dynamicValues) {
           return null;
         }
 
-      return results
+      return results;
     }
 
   // Dynamics:
@@ -215,9 +215,11 @@ function __makeRoutes(route, baseState, basePath) {
       return __makeRoutes(child, route.fullState, basePath + route.path);
     });
 
-  route.overrides = route.overrides || (route.routes || []).some(function(child) {
-    return child.overrides;
-  });
+  route.overrides =
+    route.overrides ||
+    (route.routes || []).some(function(child) {
+      return child.overrides;
+    });
 
   // Check that default route is valid:
   if (
@@ -282,7 +284,7 @@ function __makeRoutes(route, baseState, basePath) {
  * > );
  * > // { a: 3 }
  *
- * @params {object*} objects The objects to merge.
+ * @param  {object*} objects The objects to merge.
  * @return {object}          An object containing the merged object under the
  *                           key "value", and a flag specifying if some keys
  *                           where having different values in the different
@@ -540,7 +542,7 @@ var BaobabRouter = function(tree, routes, settings) {
       var restrictedState = __extractPaths(state).filter(function(obj) {
         return _routesTree.readOnly.some(function(path) {
           return __compareArrays(obj.path, path);
-        })
+        });
       }).reduce(function(res, obj) {
         obj.path.reduce(function(localState, string, i) {
           if (i === obj.path.length - 1)
@@ -548,9 +550,11 @@ var BaobabRouter = function(tree, routes, settings) {
           else
             localState[string] =
               localState[string] ||
-              ( typeof obj.path[i + 1] === 'number' ?
+              (
+                typeof obj.path[i + 1] === 'number' ?
                   [] :
-                  {} );
+                  {}
+              );
 
           return localState[string];
         }, res);
