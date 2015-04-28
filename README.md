@@ -1,75 +1,100 @@
-# Baobab-router - v0.1.0
+# Baobab-router
 
 **Baobab-router** is a JavaScript router for [Baobab](https://github.com/Yomguithereal/baobab), that binds the URL of a page to the application's state. It is released under the [MIT license](./LICENSE).
 
 ## How it works
 
-First, baobab-router has to be instanciated with a baobab instance and a list of routes. A route is a pair of some state contraints and a hash string. One route has to be the default route. At this point:
+First, baobab-router has to be instanciated with a baobab instance and a tree of routes. A route is mainly a pair of some state constraints and a path string.
+
+A route can also have children routes, and possibly can specify a default path, when the route's path matches but none of its children does.
+
+When the router is instanciated, it will listen to hash and state updates:
 
  - When the state of the tree is changed, baobab-router will search for a route with matching state constraints, and fallback on the default route if none is found.
  - When the hash is changed, baobab-router will search for a route with a matching hash, and fallback on the default route if none is found. It will then apply the state constraints of the selected route to the tree.
 
-## Example
+## Basic example
+
+Assume we have a very small application, with two generic pages (a homepage and a settings page), and two project specific pages. A project is identified by the `"projectId"` value in the state, and the view is described by the value `"view"` in the state.
+
+Here is how to instanciate the state tree and the related router:
+
 ```javascript
 var Baobab = require('baobab'),
-    BaobabRouter = require('baobab-router');
+    Router = require('baobab-router');
 
     // Instanciate Baobab tree:
 var tree = new Baobab({
-      view: 'home',
+      view: null,
       projectId: null,
       projectData: null
     }),
 
     // Instanciate router:
-    router = new BaobabRouter(tree, [
-      { route: '/home',
-        defaultRoute: true,
-        state: {
-          view: 'home',
-          projectId: null
-        } },
-      { route: '/settings',
-        state: {
-          view: 'settings',
-          projectId: null
-        } },
-      { route: '/project/:pid',
-        state: {
-          view: 'project.home',
-          projectId: ':pid'
-        } },
-      { route: '/project/:pid/settings',
-        state: {
-          view: 'project.settings',
-          projectId: ':pid'
-        } },
-      { route: '/project/:pid/dashboard',
-        state: {
-          view: 'project.dashboard',
-          projectId: ':pid'
-        } }
-    ]);
+    router = new Router(tree, {
+      defaultRoute: '/home',
+      routes: [
+        { path: '/home',
+          state: {
+            view: 'home',
+            projectId: null
+          } },
+        { path: '/settings',
+          state: {
+            view: 'settings',
+            projectId: null
+          } },
+        { path: '/project/:pid',
+          defaultRoute: '/dashboard',
+          state: {
+            projectId: ':pid'
+          } },
+          routes: [
+            { path: '/settings',
+              state: {
+                view: 'project.settings'
+              } },
+            { path: '/dashboard',
+              state: {
+                view: 'project.dashboard'
+              } }
+          ] }
+      ]
+    });
+```
 
-// Once the router is instanciated, it will check the state to find the route:
+Once the router is instanciated, it will check the hash to update the state:
+
+```javascript
 console.log(window.location.hash === '#/home');
+console.log(tree.get('view') === 'home');
+console.log(tree.get('projectId') === null);
+```
 
-// In the three following examples, the state does exactly match a route:
-function example1() {
+In the following examples, the state does exactly match a route:
+
+```javascript
+function() {
   tree.set('view', 'settings')
       .set('projectId', null)
       .commit();
 
-  console.log(window.location.hash === '#/settings');
+  setTimeout(function() {
+    console.log(window.location.hash === '#/settings');
+  }, 0);
 }
-function example2() {
-  tree.set('view', 'project.home')
+
+function() {
+  tree.set('view', 'project.settings')
       .set('projectId', '123456')
       .commit();
 
-  console.log(window.location.hash === '#/project/123456');
+  setTimeout(function() {
+    console.log(window.location.hash === '#/project/123456/settings');
+  }, 0);
 }
-function example3() {
+
+function() {
   window.location.hash = '/settings';
 
   setTimeout(function() {
@@ -77,21 +102,23 @@ function example3() {
     console.log(tree.get('projectId') === null);
   }, 0);
 }
-function example4() {
-  window.location.hash = '/project/123456';
+
+function() {
+  window.location.hash = '/project/123456/dashboard';
 
   setTimeout(function() {
-    console.log(tree.get('view') === 'project.home');
+    console.log(tree.get('view') === 'project.dashboard');
     console.log(tree.get('projectId') === '123456');
   }, 0);
 }
+```
 
-// In the two following examples, the state does not match any route, so the
-// router will fallback on the default route, and update the state in
-// consequence:
-function example5() {
+In the three following examples, the state does not match any route, so the router will fallback on the default route, and update the state in consequence:
+
+```javascript
+function() {
   tree.set('view', 'something irrelevant')
-      .set('projectId', '123456')
+      .set('projectId', null)
       .commit();
 
   setTimeout(function() {
@@ -99,14 +126,37 @@ function example5() {
     console.log(tree.get('view') === 'home');
     console.log(tree.get('projectId') === null);
   }, 0);
-}
-function example6() {
+});
+
+function() {
+  tree.set('view', 'something irrelevant')
+      .set('projectId', 123456)
+      .commit();
+
+  setTimeout(function() {
+    console.log(window.location.hash === '#/project/123456/dashboard');
+    console.log(tree.get('view') === 'dashboard');
+    console.log(tree.get('projectId') === 123456);
+  }, 0);
+});
+
+function() {
   window.location.hash = '/something/irrelevant';
 
   setTimeout(function() {
     console.log(window.location.hash === '#/home');
     console.log(tree.get('view') === 'home');
     console.log(tree.get('projectId') === null);
+  }, 0);
+}
+
+function() {
+  window.location.hash = '/project/123456/irrelevant';
+
+  setTimeout(function() {
+    console.log(window.location.hash === '#/project/123456/dashboard');
+    console.log(tree.get('view') === 'dashboard');
+    console.log(tree.get('projectId') === 123456);
   }, 0);
 }
 ```
