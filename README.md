@@ -135,7 +135,7 @@ function() {
 
   setTimeout(function() {
     console.log(window.location.hash === '#/project/123456/dashboard');
-    console.log(tree.get('view') === 'dashboard');
+    console.log(tree.get('view') === 'project.dashboard');
     console.log(tree.get('projectId') === 123456);
   }, 0);
 });
@@ -155,7 +155,7 @@ function() {
 
   setTimeout(function() {
     console.log(window.location.hash === '#/project/123456/dashboard');
-    console.log(tree.get('view') === 'dashboard');
+    console.log(tree.get('view') === 'project.dashboard');
     console.log(tree.get('projectId') === 123456);
   }, 0);
 }

@@ -466,7 +466,13 @@ var BaobabRouter = function(tree, routes, settings) {
 
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
-      _updateHash(route.fullDefaultPath);
+      hash = (hash || '').split('/');
+      path = route.fullDefaultPath.split('/').map(function(str, i) {
+        return str.match(__solver) ?
+          hash[i] || str :
+          str;
+      }).join('/');
+      _updateHash(path);
       return true;
     }
 

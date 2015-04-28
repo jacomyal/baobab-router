@@ -152,7 +152,7 @@ describe('Basic example (from the documentation)', function() {
 
     setTimeout(function() {
       assert.equal(window.location.hash, '#/project/123456/dashboard');
-      assert.equal(tree.get('view'), 'dashboard');
+      assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('projectId'), 123456);
 
       done();
@@ -176,7 +176,7 @@ describe('Basic example (from the documentation)', function() {
 
     setTimeout(function() {
       assert.equal(window.location.hash, '#/project/123456/dashboard');
-      assert.equal(tree.get('view'), 'dashboard');
+      assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('projectId'), 123456);
 
       done();
