@@ -176,7 +176,6 @@ describe('BaobabRouter.__makeRoutes', function() {
           dynamics: [],
           fullState: {},
           overrides: false,
-          path: '',
           fullPath: '',
           fullDefaultPath: '/route_A1',
 
@@ -355,5 +354,22 @@ describe('BaobabRouter.__deepMerge', function() {
 
     // Check the result:
     assert.deepEqual(c, { value: { a: 1, b: 1, c: { d: 2 } }, conflicts: true });
+  });
+});
+
+describe('BaobabRouter.__concatenatePath', function() {
+  it('should work with one argument', function() {
+    assert.equal(BaobabRouter.__concatenatePaths('a'), '/a');
+    assert.equal(BaobabRouter.__concatenatePaths('/a'), '/a');
+  });
+
+  it('should work with two argument', function() {
+    assert.equal(BaobabRouter.__concatenatePaths('a', ''), '/a');
+    assert.equal(BaobabRouter.__concatenatePaths('', 'b'), '/b');
+    assert.equal(BaobabRouter.__concatenatePaths('a', 'b'), '/a/b');
+    assert.equal(BaobabRouter.__concatenatePaths('a', '/b'), '/a/b');
+    assert.equal(BaobabRouter.__concatenatePaths('a/', '/b'), '/a/b');
+    assert.equal(BaobabRouter.__concatenatePaths('a/', 'b'), '/a/b');
+    assert.equal(BaobabRouter.__concatenatePaths('/a', '/b'), '/a/b');
   });
 });

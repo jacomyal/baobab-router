@@ -35,7 +35,6 @@ var unloggedState = {
                    data: { pid: null } }
         },
         {
-          path: '',
           state: { logged: true,
                    data: { pid: null } },
           defaultRoute: '/home',

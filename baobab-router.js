@@ -200,15 +200,15 @@ function __makeRoutes(route, baseState, basePath) {
 
   basePath = basePath || '';
 
-  route.path = route.path || '';
-  route.fullPath = __correctPath(basePath, route.path);
+  route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullState = mergedState.value;
   route.overrides = mergedState.conflicts;
   route.dynamics = route.fullPath.match(__solver) || [];
   route.updates = __extractPaths(route.fullState, route.dynamics);
 
   if (route.defaultRoute)
-    route.fullDefaultPath = __correctPath(route.fullPath, route.defaultRoute);
+    route.fullDefaultPath =
+      __concatenatePaths(route.fullPath, route.defaultRoute);
 
   if (route.routes)
     route.routes = route.routes.map(function(child) {
@@ -223,7 +223,6 @@ function __makeRoutes(route, baseState, basePath) {
 
   // Some root-specific verifications:
   if (arguments.length === 1) {
-    route.path = route.path || '';
     route.readOnly = route.readOnly || [];
 
     // The root must have a default route:
@@ -393,16 +392,28 @@ function __resolveURL(url, obj) {
  *
  * Examples:
  * *********
- * > __correctPath('/a', '/b');  // '/a/b'
- * > __correctPath('/a/', '/b'); // '/a/b'
- * > __correctPath('/a', '');    // '/a'
+ * > __concatenatePaths('a');        // '/a'
+ * > __concatenatePaths('/a');       // '/a'
+ * > __concatenatePaths('a', '');    // '/a'
+ * > __concatenatePaths('', 'b');    // '/b'
  *
- * @param  {string} basePath  The clean URL of the route's parent.
- * @param  {string} localPath The route's path.
- * @return {string}           The cleaned path.
+ * > __concatenatePaths('a', 'b');   // '/a/b'
+ * > __concatenatePaths('a', '/b');  // '/a/b'
+ * > __concatenatePaths('a/', '/b'); // '/a/b'
+ * > __concatenatePaths('a/', 'b');  // '/a/b'
+ * > __concatenatePaths('/a', '/b'); // '/a/b'
+ *
+ * @param  {string+} paths the different paths to concatenate.
+ * @return {string}        The cleaned path.
  */
-function __correctPath(basePath, localPath) {
-  return ((basePath || '') + (localPath || '')).replace(/^\/\/+/, '/');
+function __concatenatePaths() {
+  return (
+    ('/' + Array.prototype.map.call(arguments, function(str) {
+      return str || '';
+    }).join('/'))
+      .replace(/\/+/g, '/')
+      .replace(/\/+$/g, '')
+  );
 }
 
 
@@ -714,7 +725,7 @@ BaobabRouter.__makeRoutes = __makeRoutes;
 BaobabRouter.__deepMerge = __deepMerge;
 BaobabRouter.__compareArrays = __compareArrays;
 BaobabRouter.__resolveURL = __resolveURL;
-BaobabRouter.__correctPath = __correctPath;
+BaobabRouter.__concatenatePaths = __concatenatePaths;
 
 
 /****************
