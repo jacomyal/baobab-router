@@ -212,7 +212,7 @@ function __makeRoutes(route, baseState, basePath) {
 
   if (route.routes)
     route.routes = route.routes.map(function(child) {
-      return __makeRoutes(child, route.fullState, basePath + route.path);
+      return __makeRoutes(child, route.fullState, route.fullPath);
     });
 
   route.overrides =
