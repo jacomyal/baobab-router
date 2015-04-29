@@ -161,6 +161,138 @@ function() {
 }
 ```
 
+## Advanced example
+
+Let's take the exact same application, but with a `logged` flag in the state tree, specifying whether the user is logged in or not. To prevent any user to land on a page with the flag as `true` and receive some 403 errors or some similar undesired effects, the router will be forbidden to update the `logged` flag, using the `readOnly` root property:
+
+```javascript
+var Baobab = require('baobab'),
+    Router = require('baobab-router');
+
+    // Instanciate Baobab tree:
+var tree = new Baobab({
+      logged: false,
+      view: null,
+      projectId: null,
+      projectData: null
+    }),
+
+    // Instanciate router:
+    router = new Router(tree, {
+      defaultRoute: '/home',
+      // The readOnly property is an array of paths:
+      readOnly: [
+        ['logged']
+      ],
+      routes: [
+        { path: '/login',
+          state: {
+            logged: false,
+            view: 'logged',
+            projectId: null
+          } },
+        { path: '/home',
+          state: {
+            logged: true,
+            view: 'home',
+            projectId: null
+          } },
+        { path: '/settings',
+          state: {
+            logged: true,
+            view: 'settings',
+            projectId: null
+          } },
+        { path: '/project/:pid',
+          defaultRoute: '/dashboard',
+          state: {
+            logged: true,
+            projectId: ':pid'
+          } },
+          routes: [
+            { path: '/settings',
+              state: {
+                view: 'project.settings'
+              } },
+            { path: '/dashboard',
+              state: {
+                view: 'project.dashboard'
+              } }
+          ] }
+      ]
+    });
+```
+
+Once the router is instanciated, it will check the hash to update the state.
+Since the router cannot write the `logged` flag, it will search for the first route that matches all and only the `readOnly` sub-state.
+The only route that matches is the `/login` route, so it will update the URL and the state in consequence:
+
+```javascript
+console.log(window.location.hash === '#/login');
+console.log(tree.get('logged') === false);
+console.log(tree.get('view') === 'login');
+console.log(tree.get('projectId') === null);
+```
+
+So basically, the `readOnly` paths are here to apply some more constraints to the state.
+Here is how the updated application behaves on some specific cases:
+
+```javascript
+function() {
+  tree.set('logged', false)
+      .set('view', 'project.settings')
+      .set('projectId', '123456')
+      .commit();
+
+  setTimeout(function() {
+    console.log(window.location.hash === '#/login');
+    console.log(tree.get('view') === 'login');
+    console.log(tree.get('projectId') === null);
+  }, 0);
+}
+
+function() {
+  tree.set('logged', true)
+      .set('view', 'project.settings')
+      .set('projectId', '123456')
+      .commit();
+
+  setTimeout(function() {
+    console.log(window.location.hash === '#/project/123456/settings');
+    console.log(tree.get('view') === 'project.settings');
+    console.log(tree.get('projectId') === 123456);
+  }, 0);
+}
+
+function() {
+  tree.set('logged', false).commit();
+
+  setTimeout(function() {
+    window.location.hash = '/project/123456/settings';
+
+    setTimeout(function() {
+      console.log(window.location.hash === '#/login');
+      console.log(tree.get('view') === 'login');
+      console.log(tree.get('projectId') === null);
+    }, 0);
+  }, 0);
+}
+
+function() {
+  tree.set('logged', true).commit();
+
+  setTimeout(function() {
+    window.location.hash = '/project/123456/settings';
+
+    setTimeout(function() {
+      console.log(window.location.hash === '#/project/123456/settings');
+      console.log(tree.get('view') === 'project.settings');
+      console.log(tree.get('projectId') === 123456);
+    }, 0);
+  }, 0);
+}
+```
+
 ## Contributions
 
 This project is currently in an experimental state, and feedbacks, advice and pull requests are very welcome. Be sure to check code linting and to add unit tests if relevant and pass them all before submitting your pull request.
