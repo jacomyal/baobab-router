@@ -221,19 +221,6 @@ function __makeRoutes(route, baseState, basePath) {
       return child.overrides;
     });
 
-  // Check that default route is valid:
-  if (
-    route.defaultRoute &&
-    !route.routes.some(function(child) {
-      return __doesHashMatch(child.path, route.defaultRoute);
-    })
-  )
-      throw (new Error(
-        'BaobabRouter.__makeRoutes: ' +
-        'The default route "' + route.defaultRoute + '" does not match any ' +
-        'registered route.'
-      ));
-
   // Some root-specific verifications:
   if (arguments.length === 1) {
     route.path = route.path || '';
@@ -243,9 +230,28 @@ function __makeRoutes(route, baseState, basePath) {
     if (!route.defaultRoute)
       throw (new Error(
         'BaobabRouter.__makeRoutes: ' +
-        'The default route is missing.'
+        'The root must have a default route.'
       ));
   }
+
+  // Check that default route is valid:
+  if (
+    route.defaultRoute &&
+    !(route.routes || []).some(function(child) {
+      return __doesHashMatch(child.path, route.defaultRoute);
+    })
+  )
+    throw (new Error(
+      'BaobabRouter.__makeRoutes: ' +
+      'The default route "' + route.defaultRoute + '" does not match any ' +
+      'registered route.'
+    ));
+
+  if (!('path' in route) && !route.defaultRoute)
+    throw (new Error(
+      'BaobabRouter.__makeRoutes: ' +
+      'A route must have either a path or a default route.'
+    ));
 
   // Each route must have some state restriction (except for the root):
   if (arguments.length > 1 && !route.updates.length)

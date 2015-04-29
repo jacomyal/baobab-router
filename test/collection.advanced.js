@@ -354,7 +354,7 @@ describe('API and errors', function() {
           { routes: [ { path: '/toto', state: { toto: true } } ] }
         );
       },
-      /The default route is missing/
+      /The root must have a default route/
     );
   });
 
@@ -375,10 +375,42 @@ describe('API and errors', function() {
       function() {
         var router = new BaobabRouter(
           new Baobab({ toto: null }),
+          { defaultRoute: 'somethingElse' }
+        );
+      },
+      /The default route "somethingElse" does not match any registered route/
+    );
+
+    assert.throws(
+      function() {
+        var router = new BaobabRouter(
+          new Baobab({ toto: null }),
           { routes: [ { path: 'app', state: { key: 'value' } } ], defaultRoute: 'somethingElse' }
         );
       },
       /The default route "somethingElse" does not match any registered route/
+    );
+  });
+
+  it('should throw an error when a route does not have any path nor defaultRoute', function() {
+    assert.throws(
+      function() {
+        var router = new BaobabRouter(
+          new Baobab({ toto: null }),
+          { routes: [ { state: { key: 'value' } } ] }
+        );
+      },
+      /A route must have either a path or a default route/
+    );
+
+    assert.throws(
+      function() {
+        var router = new BaobabRouter(
+          new Baobab({ toto: null }),
+          { routes: [ { state: { key: 'value' }, routes: [ { path: '/somePath', state: { key2: 'value2' } } ] } ] }
+        );
+      },
+      /A route must have either a path or a default route/
     );
   });
 
