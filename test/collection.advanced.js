@@ -351,7 +351,7 @@ describe('API and errors', function() {
       function() {
         var router = new BaobabRouter(
           new Baobab({ toto: null }),
-          { routes: [ { route: '/toto', state: { toto: true } } ] }
+          { routes: [ { path: '/toto', state: { toto: true } } ] }
         );
       },
       /The default route is missing/
@@ -363,7 +363,7 @@ describe('API and errors', function() {
       function() {
         var router = new BaobabRouter(
           new Baobab({ toto: null }),
-          { routes: [ { route: 'app' } ], defaultRoute: 'app' }
+          { routes: [ { path: 'app' } ], defaultRoute: 'app' }
         );
       },
       /Each route should have some state restrictions/
@@ -375,7 +375,7 @@ describe('API and errors', function() {
       function() {
         var router = new BaobabRouter(
           new Baobab({ toto: null }),
-          { routes: [ { route: 'app', state: { key: 'value' } } ], defaultRoute: 'somethingElse' }
+          { routes: [ { path: 'app', state: { key: 'value' } } ], defaultRoute: 'somethingElse' }
         );
       },
       /The default route "somethingElse" does not match any registered route/
