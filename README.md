@@ -293,6 +293,40 @@ function() {
 }
 ```
 
+## API specifications
+
+### Instanciation
+
+The router has to be instanciated with a Baobab instance and the routes tree definition:
+
+The tree's root must respect the following schema:
+
+```javascript
+{ routes: 'Array<Route>',
+  defaultRoute: 'string',
+  readOnly: '?Array' }
+```
+
+Each other route must respect the following schema:
+
+```javascript
+{ path: '?string',
+  state: 'object',
+  defaultRoute: '?string',
+  routes: '?Array<Route>' }
+```
+
+Also, here are some rules each route must respect:
+  1. A route without a `defaultRoute` value must have a `path` value.
+  2. The `defaultRoute` value must match a child's route if provided.
+  3. The `state` object must have at least one constraint.
+
+Finally, two baobab-router instances cannot be bound to the same baobab instance.
+
+### Destruction
+
+It is possible to kill a baobab-router instance, by using its `baobabInstance.kill` method. This will remove the state and URL listeners, and unbind the instance from the related baobab tree, to allow an eventual reinstanciation with the same tree.
+
 ## Advanced features
 
 ### State constraints overriding
