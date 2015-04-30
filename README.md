@@ -319,14 +319,11 @@ Finally, since routes with a valid `defaultRoute` value are never selected as th
 This project is currently in an experimental state, and feedbacks, advice and pull requests are very welcome. Be sure to check code linting and to add unit tests if relevant and pass them all before submitting your pull request.
 
 ```bash
-# Installing the dev environment
+# Install the dev environment
 git clone git@github.com:jacomyal/baobab-router
 cd baobab-router
 npm install
 
-# Running the tests
+# Check the code and run the tests
 npm test
-
-# Linting
-gulp lint
 ```
