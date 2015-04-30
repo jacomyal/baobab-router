@@ -293,6 +293,27 @@ function() {
 }
 ```
 
+## Advanced features
+
+### State constraints overriding
+
+If a child has some state constraints that are overriding its parent's, the router will detect it and anytime the parent will not match the actual state, then the children will have to be checked as well, which will decrease the router's efficiency.
+
+### Read-only paths
+
+As previously introduced in the advanced use case, it is possible to prevent the router to update some specified paths in the state tree, by using the `readOnly` key on the routes tree's root node. This feature has been developed especially thinking about the case presented in the advanced example, and should remain to be used with caution:
+
+  - If a read-only path will store a non-boolean variable and at some point there are no route matching the current value associated to the path, the tree and the URL will be out of sync.
+  - The same issue might happen if multiple read-only paths are used, and all the different values combinations are not represented in the routes.
+
+### Default routes
+
+A route with children can have a `defaultRoute` path. If the route matches but none of its child does, then it will fallback on the default path, and recheck everything. If the default route does not match any of the children paths, then an error will be throws at the instanciation.
+
+Also, it is noticeable that a route with a `defaultRoute` value will never be the selected node of the tree, while a route with children and no default route can be selected as the end node.
+
+Finally, since routes with a valid `defaultRoute` value are never selected as the end node, it is not necessary to specify a path, and they can be used just to group other routes under some common state constraints, for instance.
+
 ## Contributions
 
 This project is currently in an experimental state, and feedbacks, advice and pull requests are very welcome. Be sure to check code linting and to add unit tests if relevant and pass them all before submitting your pull request.
