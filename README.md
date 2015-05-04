@@ -329,6 +329,12 @@ It is possible to kill a baobab-router instance, by using its `baobabInstance.ki
 
 ## Advanced features
 
+### Constructor optional settings
+
+It is possible to give the router's constructor an object of specific settings as a third argument. Currently, the only recognized key is `"solver"`, to give the instance a custom RegExp to solve dynamic values from paths.
+
+For instance, giving `{ "solver": /\{([^\/\}]*)\}/g }` will find dynamic values shaped as `"a/{b}/c"` instead of `"a/:b/c"`.
+
 ### State constraints overriding
 
 If a child has some state constraints that are overriding its parent's, the router will detect it and anytime the parent will not match the actual state, then the children will have to be checked as well, which will decrease the router's efficiency.

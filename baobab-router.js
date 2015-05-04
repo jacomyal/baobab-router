@@ -6,7 +6,7 @@
  * PRIVATE STATIC METHODS:
  * ***********************
  */
-var __solver = /:([^\/:]*)/g;
+var __defaultSolver = /:([^\/:]*)/g;
 
 /**
  * This function takes a route's hash (that might have some expression to solve,
@@ -22,12 +22,18 @@ var __solver = /:([^\/:]*)/g;
  * > __doesHashMatch('/a/:b/c', '/a/b/c'); // returns true
  * > __doesHashMatch('/a/:b', '/a/b/c');   // returns true
  *
+ * > __doesHashMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g);      // returns true
+ * > __doesHashMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g); // returns true
+ * > __doesHashMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g);  // returns false
+ *
  * @param  {string}  routeHash The route's hash.
  * @param  {string}  hash      The current hash.
+ * @param  {?RegExp} solver    The dynamic values solver. If not specified, the
+ *                             default solver will be used instead.
  * @return {boolean}           Returns true if the hash does match the path, and
  *                             false else.
  */
-function __doesHashMatch(routeHash, hash) {
+function __doesHashMatch(routeHash, hash, solver) {
   var i,
       l,
       match,
@@ -39,7 +45,7 @@ function __doesHashMatch(routeHash, hash) {
     return false;
 
   for (i = 0, l = routeArray.length; i < l; i++) {
-    match = routeArray[i].match(__solver);
+    match = routeArray[i].match(solver || __defaultSolver);
 
     if (
       (!match && (routeArray[i] !== hashArray[i])) ||
@@ -189,13 +195,14 @@ function __extractPaths(state, dynamics, results, path) {
  * given.
  *
  * @param  {object}  route     The input route object.
+ * @param  {regexp}  solver    The solver to use.
  * @param  {?object} baseState The optional base state, ie the recursively
  *                             merged state of the route's parents.
  * @param  {?string} basePath  The optional base path, ie the recursively
  *                             concatenated path of the route's parents.
  * @return {route}             The well-formed route object.
  */
-function __makeRoutes(route, baseState, basePath) {
+function __makeRoutes(route, solver, baseState, basePath) {
   var mergedState = __deepMerge(baseState || {}, route.state || {});
 
   basePath = basePath || '';
@@ -203,7 +210,7 @@ function __makeRoutes(route, baseState, basePath) {
   route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullState = mergedState.value;
   route.overrides = mergedState.conflicts;
-  route.dynamics = route.fullPath.match(__solver) || [];
+  route.dynamics = route.fullPath.match(solver) || [];
   route.updates = __extractPaths(route.fullState, route.dynamics);
 
   if (route.defaultRoute)
@@ -212,7 +219,7 @@ function __makeRoutes(route, baseState, basePath) {
 
   if (route.routes)
     route.routes = route.routes.map(function(child) {
-      return __makeRoutes(child, route.fullState, route.fullPath);
+      return __makeRoutes(child, solver, route.fullState, route.fullPath);
     });
 
   route.overrides =
@@ -222,7 +229,7 @@ function __makeRoutes(route, baseState, basePath) {
     });
 
   // Some root-specific verifications:
-  if (arguments.length === 1) {
+  if (arguments.length <= 2) {
     route.readOnly = route.readOnly || [];
 
     // The root must have a default route:
@@ -253,7 +260,7 @@ function __makeRoutes(route, baseState, basePath) {
     ));
 
   // Each route must have some state restriction (except for the root):
-  if (arguments.length > 1 && !route.updates.length)
+  if (arguments.length > 2 && !route.updates.length)
     throw (new Error(
       'BaobabRouter.__makeRoutes: ' +
       'Each route should have some state restrictions.'
@@ -423,11 +430,15 @@ function __concatenatePaths() {
  * The baobab-router constructor. In its current state, the baobab-router does
  * not expose anything to its public API.
  *
+ * Recognized settings:
+ * ********************
+ * - {?RegExp} solver A custom solver to identify dynamic values in paths.
+ *
  * @param {Baobab}  tree     The Baobab instance to connect the router to.
  * @param {Object}  routes   The routes tree. It must have a defaultRoute string
  *                           and a routes array.
- * @param {?Object} settings An optional object of settings. There are currently
- *                           no recognized setting.
+ * @param {?Object} settings An optional object of settings. The list of
+ *                           recognized settings is described up here.
  */
 var BaobabRouter = function(tree, routes, settings) {
 
@@ -442,8 +453,9 @@ var BaobabRouter = function(tree, routes, settings) {
       _stateListener,
       _tree = tree,
       _settings = settings || {},
+      _solver = _settings.solver || __defaultSolver,
       _stored = window.location.hash.replace(/^#/, ''),
-      _routesTree = __makeRoutes(__deepMerge(routes).value);
+      _routesTree = __makeRoutes(__deepMerge(routes).value, _solver);
 
 
 
@@ -485,7 +497,7 @@ var BaobabRouter = function(tree, routes, settings) {
     if (match && route.defaultRoute) {
       hash = (hash || '').split('/');
       path = route.fullDefaultPath.split('/').map(function(str, i) {
-        return str.match(__solver) ?
+        return str.match(_solver) ?
           hash[i] || str :
           str;
       }).join('/');
@@ -718,6 +730,7 @@ var BaobabRouter = function(tree, routes, settings) {
 };
 
 
+// Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
 BaobabRouter.__doesStateMatch = __doesStateMatch;
 BaobabRouter.__extractPaths = __extractPaths;
@@ -726,6 +739,9 @@ BaobabRouter.__deepMerge = __deepMerge;
 BaobabRouter.__compareArrays = __compareArrays;
 BaobabRouter.__resolveURL = __resolveURL;
 BaobabRouter.__concatenatePaths = __concatenatePaths;
+
+// Expose private attributes for unit testing:
+BaobabRouter.__defaultSolver = __defaultSolver;
 
 
 /****************

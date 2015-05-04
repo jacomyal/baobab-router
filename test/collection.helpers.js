@@ -23,6 +23,12 @@ describe('BaobabRouter.__doesHashMatch', function() {
     assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123/d'), false);
     assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123'), false);
   });
+
+  it('should work with custom solvers', function() {
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g), true);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g), true);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g), false);
+  });
 });
 
 describe('BaobabRouter.__doesStateMatch', function() {
@@ -269,7 +275,7 @@ describe('BaobabRouter.__makeRoutes', function() {
             }
           ]
         },
-        routes_built = BaobabRouter.__makeRoutes(routes);
+        routes_built = BaobabRouter.__makeRoutes(routes, BaobabRouter.__defaultSolver);
 
     assert.deepEqual(routes_built, routes_expected);
   });
