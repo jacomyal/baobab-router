@@ -729,6 +729,8 @@ var BaobabRouter = function(tree, routes, settings) {
   _checkHash(_stored);
 };
 
+// Baobab-Router version:
+BaobabRouter.version = '1.0.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
