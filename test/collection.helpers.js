@@ -180,8 +180,10 @@ describe('BaobabRouter.__makeRoutes', function() {
           // ADDED:
           updates: [],
           dynamics: [],
+          fullFacets: {},
           fullState: {},
           overrides: false,
+          facetsOverrides: false,
           fullPath: '',
           fullDefaultPath: '/route_A1',
 
@@ -196,6 +198,8 @@ describe('BaobabRouter.__makeRoutes', function() {
               dynamics: [],
               fullPath: '/route_A1',
               overrides: false,
+              facetsOverrides: false,
+              fullFacets: {},
               fullState:
                 { state_a1: { state_b1: 'A1, a1.b1' },
                   state_a2: 'A1, a2' },
@@ -213,6 +217,8 @@ describe('BaobabRouter.__makeRoutes', function() {
               dynamics: [],
               fullPath: '/route_A2',
               overrides: false,
+              facetsOverrides: false,
+              fullFacets: {},
               fullState: { state_a2: 'A2, a2' },
               updates: [
                 { dynamic: false, path: ['state_a2'], value: 'A2, a2' }
@@ -227,6 +233,8 @@ describe('BaobabRouter.__makeRoutes', function() {
                   dynamics: [],
                   fullPath: '/route_A2/route_B1',
                   overrides: false,
+                  facetsOverrides: false,
+                  fullFacets: {},
                   fullState:
                     { state_a1: { state_b1: 'A2.B1, a1.b1' },
                       state_a2: 'A2, a2' },
@@ -241,8 +249,10 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                   // ADDED:
                   overrides: false,
+                  facetsOverrides: false,
                   fullPath: '/route_A2/:route_dyn_B2',
                   dynamics: [':route_dyn_B2'],
+                  fullFacets: {},
                   fullState:
                     { state_a1: { state_b1: ':route_dyn_B2' },
                       state_a2: 'A2, a2' },
@@ -257,8 +267,10 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                       // ADDED:
                       overrides: false,
+                      facetsOverrides: false,
                       fullPath: '/route_A2/:route_dyn_B2/route_dyn_C1',
                       dynamics: [':route_dyn_B2'],
+                      fullFacets: {},
                       fullState:
                         { state_a1: { state_b1: ':route_dyn_B2' },
                           state_a2: 'A2, a2',

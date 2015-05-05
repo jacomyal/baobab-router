@@ -202,14 +202,17 @@ function __extractPaths(state, dynamics, results, path) {
  *                             concatenated path of the route's parents.
  * @return {route}             The well-formed route object.
  */
-function __makeRoutes(route, solver, baseState, basePath) {
-  var mergedState = __deepMerge(baseState || {}, route.state || {});
+function __makeRoutes(route, solver, baseState, baseFacets, basePath) {
+  var mergedState = __deepMerge(baseState || {}, route.state || {}),
+      mergedFacets = __deepMerge(baseFacets || {}, route.facets || {});
 
   basePath = basePath || '';
 
   route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullState = mergedState.value;
+  route.fullFacets = mergedFacets.value;
   route.overrides = mergedState.conflicts;
+  route.facetsOverrides = mergedFacets.conflicts;
   route.dynamics = route.fullPath.match(solver) || [];
   route.updates = __extractPaths(route.fullState, route.dynamics);
 
@@ -219,13 +222,25 @@ function __makeRoutes(route, solver, baseState, basePath) {
 
   if (route.routes)
     route.routes = route.routes.map(function(child) {
-      return __makeRoutes(child, solver, route.fullState, route.fullPath);
+      return __makeRoutes(
+        child,
+        solver,
+        route.fullState,
+        route.fullFacets,
+        route.fullPath
+      );
     });
 
   route.overrides =
     route.overrides ||
     (route.routes || []).some(function(child) {
       return child.overrides;
+    });
+
+  route.facetsOverrides =
+    route.facetsOverrides ||
+    (route.routes || []).some(function(child) {
+      return child.facetsOverrides;
     });
 
   // Some root-specific verifications:
@@ -542,18 +557,30 @@ var BaobabRouter = function(tree, routes, settings) {
    *
    * Then, the hash will be updated to match the selected route's one.
    */
-  function _checkState(basePath, baseRoute, baseState) {
+  function _checkState(basePath, baseRoute, baseState, baseFacets) {
     var k,
         match,
+        facetMatch,
         path = basePath || '',
         state = baseState || _tree.get(),
         route = baseRoute || _routesTree;
+
+    var facetsValues = {};
+
+    for (k in route.fullFacets)
+      facetsValues[k] = _tree.facets[k].get();
 
     // Check if route match:
     match = baseState ?
       __doesStateMatch(state, route.fullState, route.dynamics) :
       __doesStateMatch(route.fullState, state, route.dynamics);
     if (!match && arguments.length > 0 && !route.overrides)
+      return false;
+
+    facetMatch = baseFacets ?
+      __doesStateMatch(facetsValues, route.fullFacets, route.dynamics) :
+      __doesStateMatch(route.fullFacets, facetsValues, route.dynamics);
+    if (!facetMatch && arguments.length > 0 && !route.overrides)
       return false;
 
     // Check if a child does match:

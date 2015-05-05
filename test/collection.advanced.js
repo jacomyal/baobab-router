@@ -423,3 +423,100 @@ describe('API and errors', function() {
     );
   });
 });
+
+describe('Facets support', function() {
+  var tree,
+      router;
+
+  beforeEach(function(done) {
+    window.location.hash = '';
+    tree = new Baobab(
+
+      // Data
+      {
+        user: null,
+        view: null
+      },
+
+      // Options
+      {
+        facets: {
+          logged: {
+            cursors: {
+              user: ['user']
+            },
+            get: function(data) {
+              return !!data.user;
+            }
+          }
+        }
+      }
+    );
+
+    router = new BaobabRouter(tree, {
+      readOnly: [['user']],
+      defaultRoute: '/',
+      routes: [
+
+        // Login
+        {
+          path: '/login',
+          facets: {
+            logged: false
+          },
+          state: {
+            view: 'login'
+          }
+        },
+
+        // Home
+        {
+          path: '/',
+          facets: {
+            logged: true
+          },
+          state: {
+            view: 'home'
+          }
+        }
+      ]
+    });
+
+    setTimeout(done, 0);
+  });
+
+  afterEach(function(done) {
+    router.kill();
+    window.location.hash = '';
+    router = null;
+
+    setTimeout(done, 0);
+  });
+
+  it('should work with both facets and state.', function(done) {
+
+    assert.strictEqual(window.location.hash, '#/login');
+    assert(!tree.facets.logged.get());
+    assert.strictEqual(tree.get('view'), 'login');
+
+    window.location.hash = '';
+
+    // Trying to override hash
+    setTimeout(function() {
+      assert.strictEqual(window.location.hash, '#/login');
+      assert(!tree.facets.logged.get());
+      assert.strictEqual(tree.get('view'), 'login');
+
+      // Setting our user
+      tree.set('user', {name: 'John'});
+
+      setTimeout(function() {
+        assert.strictEqual(window.location.hash, '');
+        assert(tree.facets.logged.get());
+        assert.strictEqual(tree.get('view'), 'home');
+
+        done();
+      }, 30);
+    }, 30);
+  });
+});
