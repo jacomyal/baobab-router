@@ -64,7 +64,7 @@ describe('Basic example (from the documentation)', function() {
     tree = _newTree();
     router = _newRouter(tree);
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   afterEach(function(done) {
@@ -72,7 +72,7 @@ describe('Basic example (from the documentation)', function() {
     window.location.hash = '';
     router = null;
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   it('should start on the default route when instanciated', function(done) {

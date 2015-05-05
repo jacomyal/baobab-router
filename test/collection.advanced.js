@@ -88,7 +88,7 @@ describe('Instanciation and destruction:', function() {
     window.location.hash = '';
     router = null;
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   it('it should update the URL when the router is instanciated', function(done) {
@@ -116,7 +116,7 @@ describe('Ascending communication', function() {
     tree = _newTree();
     router = _newRouter(tree);
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   afterEach(function(done) {
@@ -124,7 +124,7 @@ describe('Ascending communication', function() {
     window.location.hash = '';
     router = null;
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   it('should stop on the first matching case', function(done) {
@@ -214,7 +214,7 @@ describe('Descending communication', function() {
     tree = _newTree();
     router = _newRouter(tree);
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   afterEach(function(done) {
@@ -222,7 +222,7 @@ describe('Descending communication', function() {
     window.location.hash = '';
     router = null;
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   it('should fallback to the default route when no route matches', function(done) {
@@ -303,7 +303,7 @@ describe('Read-only state constraints', function() {
     tree = _newTree(unloggedState);
     router = _newRouter(tree);
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   afterEach(function(done) {
@@ -311,7 +311,7 @@ describe('Read-only state constraints', function() {
     window.location.hash = '';
     router = null;
 
-    setInterval(done, 0);
+    setTimeout(done, 0);
   });
 
   it('should fallback on a route with the good values for read-only constraints (ascending)', function(done) {
