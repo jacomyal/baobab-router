@@ -345,10 +345,22 @@ describe('Read-only state constraints', function() {
 
 
 describe('API and errors', function() {
+  var router;
+
+  afterEach(function(done) {
+    if (router && router.kill) {
+      router.kill();
+      window.location.hash = '';
+      router = null;
+    }
+
+    setTimeout(done, 0);
+  });
+
   it('should throw an error when a router is initialized without default route', function() {
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { routes: [ { path: '/toto', state: { toto: true } } ] }
         );
@@ -360,7 +372,7 @@ describe('API and errors', function() {
   it('should throw an error when a route does not have any state restriction', function() {
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { routes: [ { path: 'app' } ], defaultRoute: 'app' }
         );
@@ -372,7 +384,7 @@ describe('API and errors', function() {
   it('should throw an error when the default route does not match any existing route', function() {
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { defaultRoute: 'somethingElse' }
         );
@@ -382,7 +394,7 @@ describe('API and errors', function() {
 
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { routes: [ { path: 'app', state: { key: 'value' } } ], defaultRoute: 'somethingElse' }
         );
@@ -394,7 +406,7 @@ describe('API and errors', function() {
   it('should throw an error when a route does not have any path nor defaultRoute', function() {
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { routes: [ { state: { key: 'value' } } ] }
         );
@@ -404,7 +416,7 @@ describe('API and errors', function() {
 
     assert.throws(
       function() {
-        var router = new BaobabRouter(
+        router = new BaobabRouter(
           new Baobab({ toto: null }),
           { routes: [ { state: { key: 'value' }, routes: [ { path: '/somePath', state: { key2: 'value2' } } ] } ] }
         );
@@ -414,13 +426,18 @@ describe('API and errors', function() {
   });
 
   it('should throw an error when a router is bound to a tree that already has a router', function() {
-    var tree = _newTree(),
-        router1 = _newRouter(tree);
+    var router2,
+        tree = _newTree();
+
+    router = _newRouter(tree);
 
     assert.throws(
-      function() { _newRouter(tree); },
+      function() { router2 = _newRouter(tree); },
       /A router has already been bound to this tree/
     );
+
+    if (router2 && router2.kill)
+      router2.kill();
   });
 });
 
