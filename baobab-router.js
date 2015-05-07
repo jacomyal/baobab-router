@@ -202,19 +202,23 @@ function __extractPaths(state, dynamics, results, path) {
  *                             concatenated path of the route's parents.
  * @return {route}             The well-formed route object.
  */
-function __makeRoutes(route, solver, baseState, baseFacets, basePath) {
-  var mergedState = __deepMerge(baseState || {}, route.state || {}),
-      mergedFacets = __deepMerge(baseFacets || {}, route.facets || {});
+function __makeRoutes(route, solver, baseTree, basePath) {
+  var mergedTree,
+      routeTree = {};
+
+  if (route.state)
+    routeTree.state = route.state;
+  if (route.facets)
+    routeTree.facets = route.facets;
+  mergedTree = __deepMerge(baseTree || {}, routeTree);
 
   basePath = basePath || '';
 
   route.fullPath = __concatenatePaths(basePath, route.path);
-  route.fullState = mergedState.value;
-  route.fullFacets = mergedFacets.value;
-  route.overrides = mergedState.conflicts;
-  route.facetsOverrides = mergedFacets.conflicts;
+  route.fullTree = mergedTree.value;
+  route.overrides = mergedTree.conflicts;
   route.dynamics = route.fullPath.match(solver) || [];
-  route.updates = __extractPaths(route.fullState, route.dynamics);
+  route.updates = __extractPaths(route.fullTree, route.dynamics);
 
   if (route.defaultRoute)
     route.fullDefaultPath =
@@ -225,8 +229,7 @@ function __makeRoutes(route, solver, baseState, baseFacets, basePath) {
       return __makeRoutes(
         child,
         solver,
-        route.fullState,
-        route.fullFacets,
+        route.fullTree,
         route.fullPath
       );
     });
@@ -237,15 +240,25 @@ function __makeRoutes(route, solver, baseState, baseFacets, basePath) {
       return child.overrides;
     });
 
-  route.facetsOverrides =
-    route.facetsOverrides ||
-    (route.routes || []).some(function(child) {
-      return child.facetsOverrides;
-    });
-
   // Some root-specific verifications:
   if (arguments.length <= 2) {
-    route.readOnly = route.readOnly || [];
+    // Find every facets in the tree:
+    route.facets = Object.keys(
+      (route.routes || []).reduce(function findFacets(facets, route) {
+        for (var k in route.facets || {})
+          facets[k] = true;
+
+        (route.routes || []).reduce(findFacets, facets);
+        return facets;
+      }, {})
+    );
+
+    // Check read-only paths:
+    route.readOnly = (route.readOnly || []).map(function(path) {
+      return ['state'].concat(path);
+    }).concat(route.facets.map(function(facet) {
+      return ['facets', facet];
+    }));
 
     // The root must have a default route:
     if (!route.defaultRoute)
@@ -465,6 +478,7 @@ var BaobabRouter = function(tree, routes, settings) {
   var _facet,
       _hashInterval,
       _hashListener,
+      _facetListener,
       _stateListener,
       _tree = tree,
       _settings = settings || {},
@@ -537,8 +551,10 @@ var BaobabRouter = function(tree, routes, settings) {
         if (!_routesTree.readOnly.some(function(path) {
           return __compareArrays(update.path, path);
         })) {
-          _tree.set(update.path, update.value);
-          doCommit = true;
+          if (update.path.length > 1) {
+            _tree.set(update.path.slice(1), update.value);
+            doCommit = true;
+          }
         }
       });
 
@@ -557,30 +573,24 @@ var BaobabRouter = function(tree, routes, settings) {
    *
    * Then, the hash will be updated to match the selected route's one.
    */
-  function _checkState(basePath, baseRoute, baseState, baseFacets) {
+  function _checkState(basePath, baseRoute, baseTree) {
     var k,
         match,
-        facetMatch,
         path = basePath || '',
-        state = baseState || _tree.get(),
+        tree = baseTree || {
+          state: _tree.get(),
+          facets: _routesTree.facets.reduce(function(res, facet) {
+            res[facet] = _tree.facets[facet].get();
+            return res;
+          }, {})
+        },
         route = baseRoute || _routesTree;
 
-    var facetsValues = {};
-
-    for (k in route.fullFacets)
-      facetsValues[k] = _tree.facets[k].get();
-
     // Check if route match:
-    match = baseState ?
-      __doesStateMatch(state, route.fullState, route.dynamics) :
-      __doesStateMatch(route.fullState, state, route.dynamics);
+    match = baseTree ?
+      __doesStateMatch(tree, route.fullTree, route.dynamics) :
+      __doesStateMatch(route.fullTree, tree, route.dynamics);
     if (!match && arguments.length > 0 && !route.overrides)
-      return false;
-
-    facetMatch = baseFacets ?
-      __doesStateMatch(facetsValues, route.fullFacets, route.dynamics) :
-      __doesStateMatch(route.fullFacets, facetsValues, route.dynamics);
-    if (!facetMatch && arguments.length > 0 && !route.overrides)
       return false;
 
     // Check if a child does match:
@@ -597,31 +607,31 @@ var BaobabRouter = function(tree, routes, settings) {
     if (!arguments.length) {
       _stored = null;
 
-      var restrictedState = __extractPaths(state).filter(function(obj) {
+      var restrictedTree = __extractPaths(tree).filter(function(obj) {
         return _routesTree.readOnly.some(function(path) {
           return __compareArrays(obj.path, path);
         });
       }).reduce(function(res, obj) {
-        obj.path.reduce(function(localState, string, i) {
+        obj.path.reduce(function(localTree, string, i) {
           if (i === obj.path.length - 1)
-            localState[string] = obj.value;
+            localTree[string] = obj.value;
           else
-            localState[string] =
-              localState[string] ||
+            localTree[string] =
+              localTree[string] ||
               (
                 typeof obj.path[i + 1] === 'number' ?
                   [] :
                   {}
               );
 
-          return localState[string];
+          return localTree[string];
         }, res);
         return res;
       }, {});
 
       if (
         route.routes.some(function(child) {
-          return _checkState(route.fullPath, child, restrictedState);
+          return _checkState(route.fullPath, child, restrictedTree);
         })
       )
         return true;
@@ -673,8 +683,10 @@ var BaobabRouter = function(tree, routes, settings) {
       window.clearInterval(_hashInterval);
 
     // Unbind the tree:
-    // _facet.off(_stateListener);
     _facet.release();
+    _routesTree.facets.forEach(function(facet) {
+      _tree.facets[facet].off('update', _facetListener);
+    });
     _tree.router = null;
   }
 
@@ -718,6 +730,10 @@ var BaobabRouter = function(tree, routes, settings) {
   }
 
   // Listen to the state changes:
+  _facetListener = function() {
+    _checkState();
+  };
+
   _facet = _tree.createFacet({
     cursors: __extractPaths(
       _routesTree.routes.reduce(
@@ -725,12 +741,14 @@ var BaobabRouter = function(tree, routes, settings) {
           return (child.routes || []).reduce(
             _extract,
             arr.concat(child.updates.map(function(obj) {
-              return obj.path;
+              return obj.path.slice(1);
             }))
           );
         },
         []
-      ).reduce(function(context, path) {
+      ).filter(function(path) {
+        return path && path.length;
+      }).reduce(function(context, path) {
         path.reduce(function(localContext, key) {
           return (key in localContext) ?
             localContext[key] :
@@ -745,8 +763,9 @@ var BaobabRouter = function(tree, routes, settings) {
     }, {})
   });
 
-  _facet.on('update', function() {
-    _checkState();
+  _facet.on('update', _facetListener);
+  _routesTree.facets.forEach(function(facet) {
+    _tree.facets[facet].on('update', _facetListener);
   });
 
   // Export publics:

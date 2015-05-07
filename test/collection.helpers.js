@@ -157,7 +157,8 @@ describe('BaobabRouter.__makeRoutes', function() {
               routes: [
                 {
                   path: '/route_B1',
-                  state: { state_a1: { state_b1: 'A2.B1, a1.b1' } }
+                  state: { state_a1: { state_b1: 'A2.B1, a1.b1' } },
+                  facets: { facet_a1: 'A2.B1, a1' }
                 },
                 {
                   path: '/:route_dyn_B2',
@@ -175,16 +176,18 @@ describe('BaobabRouter.__makeRoutes', function() {
         },
         routes_expected = {
           defaultRoute: '/route_A1',
-          readOnly: [['state_a1', 'state_b1']],
+          readOnly: [
+            ['state', 'state_a1', 'state_b1'],
+            ['facets', 'facet_a1']
+          ],
 
           // ADDED:
           updates: [],
           dynamics: [],
-          fullFacets: {},
-          fullState: {},
+          fullTree: {},
           overrides: false,
-          facetsOverrides: false,
           fullPath: '',
+          facets: [ 'facet_a1' ],
           fullDefaultPath: '/route_A1',
 
           routes: [
@@ -198,14 +201,15 @@ describe('BaobabRouter.__makeRoutes', function() {
               dynamics: [],
               fullPath: '/route_A1',
               overrides: false,
-              facetsOverrides: false,
-              fullFacets: {},
-              fullState:
-                { state_a1: { state_b1: 'A1, a1.b1' },
-                  state_a2: 'A1, a2' },
+              fullTree: {
+                state: {
+                  state_a1: { state_b1: 'A1, a1.b1' },
+                  state_a2: 'A1, a2'
+                },
+              },
               updates: [
-                { dynamic: false, path: ['state_a1', 'state_b1'], value: 'A1, a1.b1' },
-                { dynamic: false, path: ['state_a2'], value: 'A1, a2' }
+                { dynamic: false, path: ['state', 'state_a1', 'state_b1'], value: 'A1, a1.b1' },
+                { dynamic: false, path: ['state', 'state_a2'], value: 'A1, a2' }
               ]
             },
 
@@ -217,11 +221,9 @@ describe('BaobabRouter.__makeRoutes', function() {
               dynamics: [],
               fullPath: '/route_A2',
               overrides: false,
-              facetsOverrides: false,
-              fullFacets: {},
-              fullState: { state_a2: 'A2, a2' },
+              fullTree: { state: { state_a2: 'A2, a2' } },
               updates: [
-                { dynamic: false, path: ['state_a2'], value: 'A2, a2' }
+                { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' }
               ],
 
               routes: [
@@ -233,14 +235,22 @@ describe('BaobabRouter.__makeRoutes', function() {
                   dynamics: [],
                   fullPath: '/route_A2/route_B1',
                   overrides: false,
-                  facetsOverrides: false,
-                  fullFacets: {},
-                  fullState:
-                    { state_a1: { state_b1: 'A2.B1, a1.b1' },
-                      state_a2: 'A2, a2' },
+                  facets: {
+                    facet_a1: 'A2.B1, a1'
+                  },
+                  fullTree: {
+                    state: {
+                      state_a1: { state_b1: 'A2.B1, a1.b1' },
+                      state_a2: 'A2, a2'
+                    },
+                    facets: {
+                      facet_a1: 'A2.B1, a1'
+                    }
+                  },
                   updates: [
-                    { dynamic: false, path: ['state_a2'], value: 'A2, a2' },
-                    { dynamic: false, path: ['state_a1', 'state_b1'], value: 'A2.B1, a1.b1' }
+                    { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
+                    { dynamic: false, path: ['state', 'state_a1', 'state_b1'], value: 'A2.B1, a1.b1' },
+                    { dynamic: false, path: ['facets', 'facet_a1'], value: 'A2.B1, a1' }
                   ]
                 },
                 {
@@ -249,16 +259,17 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                   // ADDED:
                   overrides: false,
-                  facetsOverrides: false,
                   fullPath: '/route_A2/:route_dyn_B2',
                   dynamics: [':route_dyn_B2'],
-                  fullFacets: {},
-                  fullState:
-                    { state_a1: { state_b1: ':route_dyn_B2' },
-                      state_a2: 'A2, a2' },
+                  fullTree: {
+                    state: {
+                      state_a1: { state_b1: ':route_dyn_B2' },
+                      state_a2: 'A2, a2'
+                    }
+                  },
                   updates: [
-                    { dynamic: false, path: ['state_a2'], value: 'A2, a2' },
-                    { dynamic: true, path: ['state_a1', 'state_b1'], value: ':route_dyn_B2' }
+                    { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
+                    { dynamic: true, path: ['state', 'state_a1', 'state_b1'], value: ':route_dyn_B2' }
                   ],
                   routes: [
                     {
@@ -267,18 +278,19 @@ describe('BaobabRouter.__makeRoutes', function() {
 
                       // ADDED:
                       overrides: false,
-                      facetsOverrides: false,
                       fullPath: '/route_A2/:route_dyn_B2/route_dyn_C1',
                       dynamics: [':route_dyn_B2'],
-                      fullFacets: {},
-                      fullState:
-                        { state_a1: { state_b1: ':route_dyn_B2' },
+                      fullTree: {
+                        state: {
+                          state_a1: { state_b1: ':route_dyn_B2' },
                           state_a2: 'A2, a2',
-                          state_a3: 'A2.B2.C1, a3' },
+                          state_a3: 'A2.B2.C1, a3'
+                        }
+                      },
                       updates: [
-                        { dynamic: false, path: ['state_a2'], value: 'A2, a2' },
-                        { dynamic: true, path: ['state_a1', 'state_b1'], value: ':route_dyn_B2' },
-                        { dynamic: false, path: ['state_a3'], value: 'A2.B2.C1, a3' }
+                        { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
+                        { dynamic: true, path: ['state', 'state_a1', 'state_b1'], value: ':route_dyn_B2' },
+                        { dynamic: false, path: ['state', 'state_a3'], value: 'A2.B2.C1, a3' }
                       ]
                     }
                   ]
