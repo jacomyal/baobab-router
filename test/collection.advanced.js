@@ -474,28 +474,23 @@ describe('Facets support', function() {
       readOnly: [['user']],
       defaultRoute: '/',
       routes: [
-
         // Login
-        {
-          path: '/login',
+        { path: '/login',
           facets: {
             logged: false
           },
           state: {
             view: 'login'
-          }
-        },
+          } },
 
         // Home
-        {
-          path: '/',
+        { path: '/',
           facets: {
             logged: true
           },
           state: {
             view: 'home'
-          }
-        }
+          } }
       ]
     });
 
@@ -511,29 +506,29 @@ describe('Facets support', function() {
   });
 
   it('should work with both facets and state.', function(done) {
-
-    assert.strictEqual(window.location.hash, '#/login');
-    assert(!tree.facets.logged.get());
-    assert.strictEqual(tree.get('view'), 'login');
+    assert.equal(window.location.hash, '#/login');
+    assert.equal(tree.facets.logged.get(), false);
+    assert.equal(tree.get('view'), 'login');
 
     window.location.hash = '';
 
     // Trying to override hash
     setTimeout(function() {
-      assert.strictEqual(window.location.hash, '#/login');
-      assert(!tree.facets.logged.get());
-      assert.strictEqual(tree.get('view'), 'login');
+      assert.equal(window.location.hash, '#/login');
+      assert.equal(tree.facets.logged.get(), false);
+      assert.equal(tree.get('view'), 'login');
 
       // Setting our user
-      tree.set('user', {name: 'John'});
+      tree.set('user', {name: 'John'})
+          .commit();
 
       setTimeout(function() {
-        assert.strictEqual(window.location.hash, '');
-        assert(tree.facets.logged.get());
-        assert.strictEqual(tree.get('view'), 'home');
+        assert.equal(window.location.hash, '');
+        assert.equal(tree.facets.logged.get(), true);
+        assert.equal(tree.get('view'), 'home');
 
         done();
-      }, 30);
-    }, 30);
+      }, 0);
+    }, 0);
   });
 });
