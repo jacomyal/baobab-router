@@ -56,6 +56,40 @@ var HashUrlHandler = function() {
   this.kill = kill;
 };
 
+var HistoryUrlHandler = function(settings) {
+  var
+    _settings = settings || {},
+    _window = _settings.window || window,
+    _history = _settings.history || _window.history,
+    _rootPath = _settings.rootPath || '',
+    _onChangeCallback,
+    _popstateListener;
+
+  function init(onChangeCallback) {
+    _onChangeCallback = onChangeCallback;
+    _popstateListener = function(e) {
+      var path = _window.location.pathname.substring(_rootPath.length);
+      _onChangeCallback(path);
+    };
+
+    _window.addEventListener('popstate', _popstateListener);
+    _popstateListener();
+  }
+
+  function updateUrl(url) {
+    if (_window.location.pathname !== _rootPath + url) {
+      _history.pushState(null, null, _rootPath + url);
+    }
+  }
+
+  function kill() {
+    _window.removeEventListener('popstate', _popstateListener, false);
+  }
+
+  this.init = init;
+  this.updateUrl = updateUrl;
+  this.kill = kill;
+};
 
 /*************************
  * PRIVATE STATIC METHODS:
@@ -818,6 +852,7 @@ BaobabRouter.__defaultSolver = __defaultSolver;
 
 // Expose public types:
 BaobabRouter.HashUrlHandler = HashUrlHandler;
+BaobabRouter.HistoryUrlHandler = HistoryUrlHandler;
 
 /****************
  * EXPORT MODULE:
