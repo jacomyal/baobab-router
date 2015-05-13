@@ -3,31 +3,31 @@
 var assert = require('assert'),
     BaobabRouter = require('../baobab-router.js');
 
-describe('BaobabRouter.__doesHashMatch', function() {
+describe('BaobabRouter.__doesUrlMatch', function() {
   it('should work with basic cases', function() {
-    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c', '/a/b/c'), true);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/b', '/a/b/c'), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/b/c', '/a/b/c'), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/b', '/a/b/c'), true);
 
-    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c', '/a/c/b'), false);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c/d', '/a/c/b'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/b/c', '/a/c/b'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/b/c/d', '/a/c/b'), false);
   });
 
   it('should work with dynamic attributes', function() {
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123/c'), true);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/123/c'), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b/c', '/a/123/c'), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b', '/a/123/c'), true);
 
     // Empty strings are not valid values for matching dynamic values:
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/'), false);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a//c'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b', '/a/'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b/c', '/a//c'), false);
 
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123/d'), false);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b/c', '/a/123/d'), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b/c', '/a/123'), false);
   });
 
   it('should work with custom solvers', function() {
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g), true);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g), true);
-    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g), false);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g), true);
+    assert.equal(BaobabRouter.__doesUrlMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g), false);
   });
 });
 
