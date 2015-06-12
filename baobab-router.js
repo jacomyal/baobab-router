@@ -1,6 +1,106 @@
 'use strict';
 
+var HashUrlHandler = function() {
+  var
+    _onChangeCallback,
+    _hashListener,
+    _hashInterval,
+    _stored;
 
+  function init(onChangeCallback) {
+    _onChangeCallback = onChangeCallback;
+    _stored = window.location.hash.replace(/^#/, '');
+    _onChangeCallback(_stored);
+
+    // Listen to the url changes:
+    if ('onhashchange' in window) {
+      _hashListener = function() {
+        var url = window.location.hash.replace(/^#/, '');
+        if (url !== _stored) {
+          _stored = url;
+          _onChangeCallback(_stored);
+        }
+      };
+
+      window.addEventListener('hashchange', _hashListener, false);
+    } else {
+      _stored = window.location.hash;
+      _hashInterval = window.setInterval(function() {
+        var url = window.location.hash.replace(/^#/, '');
+        if (url !== _stored) {
+          _stored = url;
+          _onChangeCallback(_stored);
+        }
+      }, 100);
+    }
+  }
+
+  function updateUrl(url, force) {
+    if (force || _stored !== url) {
+      window.location.hash = url;
+      _stored = url;
+      _onChangeCallback(_stored);
+    }
+  }
+
+  function kill() {
+    // Url update capture:
+    if (_hashListener)
+      window.removeEventListener('hashchange', _hashListener, false);
+    else if (_hashInterval)
+      window.clearInterval(_hashInterval);
+  }
+
+  this.init = init;
+  this.updateUrl = updateUrl;
+  this.kill = kill;
+};
+
+var HistoryUrlHandler = function(settings) {
+  var
+    _settings = settings || {},
+    _history = _settings.history || window.history,
+    _basePath = _settings.basePath || '',
+    _onChangeCallback,
+    _popstateListener;
+
+  function init(onChangeCallback) {
+    _onChangeCallback = onChangeCallback;
+    _popstateListener = function(e) {
+      var path = window.location.pathname.substring(_basePath.length);
+      _onChangeCallback(path);
+    };
+
+    window.addEventListener('popstate', _popstateListener);
+    _popstateListener();
+  }
+
+  function updateUrl(url) {
+    if (window.location.pathname !== _basePath + url) {
+      _history.pushState(null, null, _basePath + url);
+    }
+  }
+
+  function kill() {
+    window.removeEventListener('popstate', _popstateListener, false);
+  }
+
+  function navigate(url) {
+    HistoryUrlHandler.navigate(_basePath, url);
+  }
+
+  this.init = init;
+  this.updateUrl = updateUrl;
+  this.kill = kill;
+  this.navigate = navigate;
+};
+
+HistoryUrlHandler.navigate = function(basePath, url) {
+  var popstateEvent = document.createEvent('Event');
+  popstateEvent.initEvent('popstate', true, true);
+  window.history.pushState(null, null, basePath + url);
+  window.dispatchEvent(popstateEvent);
+};
 
 /*************************
  * PRIVATE STATIC METHODS:
@@ -9,47 +109,47 @@
 var __defaultSolver = /:([^\/:]*)/g;
 
 /**
- * This function takes a route's hash (that might have some expression to solve,
- * such as /toto/:tutu/tata or so), and an actual hash. It will then compare
- * them to find if the hash does match.
+ * This function takes a route's url (that might have some expression to solve,
+ * such as /toto/:tutu/tata or so), and an actual url. It will then compare
+ * them to find if the url does match.
  *
  * Examples:
  * *********
- * > __doesHashMatch('/a/b/c', '/a/b/c');  // returns true
- * > __doesHashMatch('/a/b/c', '/a/c/b');  // returns false
+ * > __doesUrlMatch('/a/b/c', '/a/b/c');  // returns true
+ * > __doesUrlMatch('/a/b/c', '/a/c/b');  // returns false
  *
- * > __doesHashMatch('/a/b', '/a/b/c');    // returns true
- * > __doesHashMatch('/a/:b/c', '/a/b/c'); // returns true
- * > __doesHashMatch('/a/:b', '/a/b/c');   // returns true
+ * > __doesUrlMatch('/a/b', '/a/b/c');    // returns true
+ * > __doesUrlMatch('/a/:b/c', '/a/b/c'); // returns true
+ * > __doesUrlMatch('/a/:b', '/a/b/c');   // returns true
  *
- * > __doesHashMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g);      // returns true
- * > __doesHashMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g); // returns true
- * > __doesHashMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g);  // returns false
+ * > __doesUrlMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g);      // returns true
+ * > __doesUrlMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g); // returns true
+ * > __doesUrlMatch('/a/:b', '/a/b/c', /\{([^\/\}]*)\}/g);  // returns false
  *
- * @param  {string}  routeHash The route's hash.
- * @param  {string}  hash      The current hash.
+ * @param  {string}  routeUrl The route's url.
+ * @param  {string}  url      The current url.
  * @param  {?RegExp} solver    The dynamic values solver. If not specified, the
  *                             default solver will be used instead.
- * @return {boolean}           Returns true if the hash does match the path, and
+ * @return {boolean}           Returns true if the url does match the path, and
  *                             false else.
  */
-function __doesHashMatch(routeHash, hash, solver) {
+function __doesUrlMatch(routeUrl, url, solver) {
   var i,
       l,
       match,
-      routeArray = routeHash.split('/'),
-      hashArray = hash.split('/');
+      routeArray = routeUrl.split('/'),
+      urlArray = url.split('/');
 
   // Check lengths:
-  if (routeArray.length > hashArray.length)
+  if (routeArray.length > urlArray.length)
     return false;
 
   for (i = 0, l = routeArray.length; i < l; i++) {
     match = routeArray[i].match(solver || __defaultSolver);
 
     if (
-      (!match && (routeArray[i] !== hashArray[i])) ||
-      (match && !hashArray[i])
+      (!match && (routeArray[i] !== urlArray[i])) ||
+      (match && !urlArray[i])
     )
       return false;
   }
@@ -60,14 +160,14 @@ function __doesHashMatch(routeHash, hash, solver) {
 /**
  * This function takes a route's state constraints (that might have some dynamic
  * values, such as ":tutu" or so), and the actual app state. It will then
- * compare them to find if the hash does match, and return an object with the
+ * compare them to find if the url does match, and return an object with the
  * dynamic strings current values. It returns false if the state does not match.
  *
  * Scalars are compared with the "===" operator, but another test checks if both
  * values to treat them as the same value.
  *
  * @param  {object}  routeState    The route's state constraints.
- * @param  {object}  hash          The current state.
+ * @param  {object}  url          The current state.
  * @param  {array}   dynamicValues The array of the dynamic values.
  * @return {?object}               Returns an object with the dynamic values if
  *                                 the state does match the constraints, and
@@ -272,7 +372,7 @@ function __makeRoutes(route, solver, baseTree, basePath) {
   if (
     route.defaultRoute &&
     !(route.routes || []).some(function(child) {
-      return __doesHashMatch(child.path, route.defaultRoute);
+      return __doesUrlMatch(child.path, route.defaultRoute);
     })
   )
     throw (new Error(
@@ -476,15 +576,14 @@ var BaobabRouter = function(tree, routes, settings) {
    */
 
   var _facet,
-      _hashInterval,
-      _hashListener,
       _facetListener,
       _stateListener,
       _tree = tree,
       _settings = settings || {},
       _solver = _settings.solver || __defaultSolver,
-      _stored = window.location.hash.replace(/^#/, ''),
-      _routesTree = __makeRoutes(__deepMerge(routes).value, _solver);
+      _urlHandler = _settings.urlHandler || new HashUrlHandler(),
+      _routesTree = __makeRoutes(__deepMerge(routes).value, _solver),
+      _forceUpdateUrl = false;
 
 
 
@@ -496,20 +595,20 @@ var BaobabRouter = function(tree, routes, settings) {
    */
 
   /**
-   * This function will recursively check the hash to find a route that matches.
+   * This function will recursively check the url to find a route that matches.
    * If none is found, then the default route will be used instead.
    *
    * Then, the state will be updated to match the selected route's state
    * constraints.
    */
-  function _checkHash(hash, basePath, baseRoute) {
+  function _checkUrl(url, basePath, baseRoute) {
     var match,
         doCommit,
         path = basePath || '',
         route = baseRoute || _routesTree;
 
     // Check if route match:
-    match = __doesHashMatch(route.fullPath, hash);
+    match = __doesUrlMatch(route.fullPath, url);
     if (!match)
       return false;
 
@@ -517,20 +616,20 @@ var BaobabRouter = function(tree, routes, settings) {
     if (
       route.routes &&
       route.routes.some(function(child) {
-        return _checkHash(hash, route.fullPath, child);
+        return _checkUrl(url, route.fullPath, child);
       })
     )
       return true;
 
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
-      hash = (hash || '').split('/');
+      url = (url || '').split('/');
       path = route.fullDefaultPath.split('/').map(function(str, i) {
         return str.match(_solver) ?
-          hash[i] || str :
+          url[i] || str :
           str;
       }).join('/');
-      _updateHash(path);
+      _updateUrl(path);
       return true;
     }
 
@@ -544,7 +643,7 @@ var BaobabRouter = function(tree, routes, settings) {
         };
 
         if (obj.dynamic)
-          update.value = hash.split('/')[
+          update.value = url.split('/')[
             route.fullPath.split('/').indexOf(update.value)
           ];
 
@@ -571,7 +670,7 @@ var BaobabRouter = function(tree, routes, settings) {
    * matching state constraints. If none is found, then the default route will
    * be used instead.
    *
-   * Then, the hash will be updated to match the selected route's one.
+   * Then, the url will be updated to match the selected route's one.
    */
   function _checkState(basePath, baseRoute, baseTree) {
     var k,
@@ -605,7 +704,7 @@ var BaobabRouter = function(tree, routes, settings) {
     // If the root route did not find any match, let's compare the tree with
     // only the read-only restrictions:
     if (!arguments.length) {
-      _stored = null;
+      _forceUpdateUrl = true;
 
       var restrictedTree = __extractPaths(tree).filter(function(obj) {
         return _routesTree.readOnly.some(function(path) {
@@ -638,7 +737,7 @@ var BaobabRouter = function(tree, routes, settings) {
     }
 
     if (match) {
-      _updateHash(__resolveURL(
+      _updateUrl(__resolveURL(
         route.defaultRoute ?
           route.fullDefaultPath :
           route.fullPath,
@@ -650,20 +749,16 @@ var BaobabRouter = function(tree, routes, settings) {
   }
 
   /**
-   * This function will update the hash, and execute the _checkHash method
-   * if the new hash is different from the stored one.
+   * This function will update the url, and execute the _checkUrl method
+   * if the new url is different from the stored one.
    *
-   * @param  {string} hash The new hash.
+   * @param  {string} url The new url.
    */
-  function _updateHash(hash) {
-    if (_stored !== hash) {
-      window.location.hash = hash;
-
-      // Force execute _checkHash:
-      if (hash !== _stored) {
-        _stored = hash;
-        _checkHash(_stored);
-      }
+  function _updateUrl(url) {
+    var _force = _forceUpdateUrl;
+    _forceUpdateUrl = false;
+    if (_urlHandler.updateUrl(url, _force)) {
+      _checkUrl(url);
     }
   }
 
@@ -676,11 +771,7 @@ var BaobabRouter = function(tree, routes, settings) {
    * ***************
    */
   function kill() {
-    // Hash update capture:
-    if (_hashListener)
-      window.removeEventListener('hashchange', _hashListener, false);
-    else if (_hashInterval)
-      window.clearInterval(_hashInterval);
+    _urlHandler.kill();
 
     // Unbind the tree:
     _facet.release();
@@ -706,28 +797,6 @@ var BaobabRouter = function(tree, routes, settings) {
       'A router has already been bound to this tree.'
     ));
   _tree.router = this;
-
-  // Listen to the hash changes:
-  if ('onhashchange' in window) {
-    _hashListener = function() {
-      var hash = window.location.hash.replace(/^#/, '');
-      if (hash !== _stored) {
-        _stored = hash;
-        _checkHash(_stored);
-      }
-    };
-
-    window.addEventListener('hashchange', _hashListener, false);
-  } else {
-    _stored = window.location.hash;
-    _hashInterval = window.setInterval(function() {
-      var hash = window.location.hash.replace(/^#/, '');
-      if (hash !== _stored) {
-        _stored = hash;
-        _checkHash(_stored);
-      }
-    }, 100);
-  }
 
   // Listen to the state changes:
   _facetListener = function() {
@@ -771,15 +840,16 @@ var BaobabRouter = function(tree, routes, settings) {
   // Export publics:
   this.kill = kill;
 
-  // Read the current hash:
-  _checkHash(_stored);
+  _urlHandler.init(function(url) {
+    _checkUrl(url);
+  });
 };
 
 // Baobab-Router version:
 BaobabRouter.version = '1.0.0';
 
 // Expose private methods for unit testing:
-BaobabRouter.__doesHashMatch = __doesHashMatch;
+BaobabRouter.__doesUrlMatch = __doesUrlMatch;
 BaobabRouter.__doesStateMatch = __doesStateMatch;
 BaobabRouter.__extractPaths = __extractPaths;
 BaobabRouter.__makeRoutes = __makeRoutes;
@@ -791,6 +861,9 @@ BaobabRouter.__concatenatePaths = __concatenatePaths;
 // Expose private attributes for unit testing:
 BaobabRouter.__defaultSolver = __defaultSolver;
 
+// Expose public types:
+BaobabRouter.HashUrlHandler = HashUrlHandler;
+BaobabRouter.HistoryUrlHandler = HistoryUrlHandler;
 
 /****************
  * EXPORT MODULE:
