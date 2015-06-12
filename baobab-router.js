@@ -60,14 +60,14 @@ var HistoryUrlHandler = function(settings) {
   var
     _settings = settings || {},
     _history = _settings.history || window.history,
-    _rootPath = _settings.rootPath || '',
+    _basePath = _settings.basePath || '',
     _onChangeCallback,
     _popstateListener;
 
   function init(onChangeCallback) {
     _onChangeCallback = onChangeCallback;
     _popstateListener = function(e) {
-      var path = window.location.pathname.substring(_rootPath.length);
+      var path = window.location.pathname.substring(_basePath.length);
       _onChangeCallback(path);
     };
 
@@ -76,8 +76,8 @@ var HistoryUrlHandler = function(settings) {
   }
 
   function updateUrl(url) {
-    if (window.location.pathname !== _rootPath + url) {
-      _history.pushState(null, null, _rootPath + url);
+    if (window.location.pathname !== _basePath + url) {
+      _history.pushState(null, null, _basePath + url);
     }
   }
 
