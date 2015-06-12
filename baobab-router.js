@@ -59,8 +59,7 @@ var HashUrlHandler = function() {
 var HistoryUrlHandler = function(settings) {
   var
     _settings = settings || {},
-    _window = _settings.window || window,
-    _history = _settings.history || _window.history,
+    _history = _settings.history || window.history,
     _rootPath = _settings.rootPath || '',
     _onChangeCallback,
     _popstateListener;
@@ -68,22 +67,22 @@ var HistoryUrlHandler = function(settings) {
   function init(onChangeCallback) {
     _onChangeCallback = onChangeCallback;
     _popstateListener = function(e) {
-      var path = _window.location.pathname.substring(_rootPath.length);
+      var path = window.location.pathname.substring(_rootPath.length);
       _onChangeCallback(path);
     };
 
-    _window.addEventListener('popstate', _popstateListener);
+    window.addEventListener('popstate', _popstateListener);
     _popstateListener();
   }
 
   function updateUrl(url) {
-    if (_window.location.pathname !== _rootPath + url) {
+    if (window.location.pathname !== _rootPath + url) {
       _history.pushState(null, null, _rootPath + url);
     }
   }
 
   function kill() {
-    _window.removeEventListener('popstate', _popstateListener, false);
+    window.removeEventListener('popstate', _popstateListener, false);
   }
 
   this.init = init;
