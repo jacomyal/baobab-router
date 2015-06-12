@@ -85,9 +85,21 @@ var HistoryUrlHandler = function(settings) {
     window.removeEventListener('popstate', _popstateListener, false);
   }
 
+  function navigate(url) {
+    HistoryUrlHandler.navigate(_basePath, url);
+  }
+
   this.init = init;
   this.updateUrl = updateUrl;
   this.kill = kill;
+  this.navigate = navigate;
+};
+
+HistoryUrlHandler.navigate = function(basePath, url) {
+  var popstateEvent = document.createEvent('Event');
+  popstateEvent.initEvent('popstate', true, true);
+  window.history.pushState(null, null, basePath + url);
+  window.dispatchEvent(popstateEvent);
 };
 
 /*************************
