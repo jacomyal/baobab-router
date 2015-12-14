@@ -2,9 +2,14 @@
   "name": "baobab-router",
   "version": "1.0.0",
   "description": "A router for Baobab",
-  "main": "baobab-router.js",
+  "main": "baobab-router.dist.js",
   "scripts": {
-    "test": "gulp"
+    "lint": "eslint baobab-router.js test/collection*.js",
+    "build": "babel baobab-router.js -o baobab-router.dist.js --presets es2015",
+    "test:build": "browserify test/collections.js -o test/build/test.build.js -t [ babelify --presets [ es2015 ] ]",
+    "test:exec": "mocha-phantomjs ./test/test.html",
+    "test": "npm run test:build; npm run test:exec",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -21,14 +26,27 @@
   },
   "homepage": "https://github.com/jacomyal/baobab-router",
   "devDependencies": {
-    "baobab": "^1.0.2",
+    "babel-cli": "^6.3.17",
+    "babel-eslint": "^4.1.6",
+    "babel-preset-es2015": "^6.3.13",
+    "babelify": "^7.2.0",
+    "baobab": "^1.1.2",
     "browserify": "^8.1.3",
-    "gulp": "^3.8.11",
-    "gulp-gjslint": "^0.1.4",
-    "gulp-jshint": "^1.10.0",
-    "gulp-mocha-phantomjs": "^0.6.1",
-    "gulp-rename": "^1.2.2",
-    "jshint-stylish": "^1.0.1",
-    "vinyl-transform": "^1.0.0"
+    "eslint": "^1.10.3",
+    "eslint-config-airbnb": "^2.0.0",
+    "eslint-plugin-react": "^3.11.3",
+    "mocha-phantomjs": "^4.0.1"
+  },
+  "eslintConfig": {
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "env": {
+      "browser": true
+    },
+    "globals": {
+      "window": true,
+      "describe": true,
+      "assert": true
+    }
   }
 }
