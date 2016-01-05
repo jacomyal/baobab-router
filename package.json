@@ -4,8 +4,8 @@
   "description": "A router for Baobab",
   "main": "baobab-router.dist.js",
   "scripts": {
-    "lint": "eslint baobab-router.js test/collection*.js",
-    "build": "babel baobab-router.js -o baobab-router.dist.js --presets es2015",
+    "lint": "eslint baobab-router.js",
+    "build": "babel baobab-router.js -o baobab-router.dist.js --presets es2015 --plugins add-module-exports",
     "test:build": "browserify test/collections.js -o test/build/test.build.js -t [ babelify --presets [ es2015 ] ]",
     "test:exec": "mocha-phantomjs ./test/test.html",
     "test": "npm run test:build; npm run test:exec",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "babel-cli": "^6.3.17",
     "babel-eslint": "^4.1.6",
+    "babel-plugin-add-module-exports": "^0.1.1",
     "babel-preset-es2015": "^6.3.13",
     "babelify": "^7.2.0",
     "baobab": "^1.1.2",

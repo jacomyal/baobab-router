@@ -1,7 +1,7 @@
 'use strict';
 
-var assert = require('assert'),
-    BaobabRouter = require('../baobab-router.js');
+import assert from 'assert';
+import BaobabRouter from '../baobab-router.js';
 
 describe('BaobabRouter.__doesHashMatch', function() {
   it('should work with basic cases', function() {

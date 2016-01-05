@@ -1,8 +1,8 @@
 'use strict';
 
-var Baobab = require('baobab'),
-    assert = require('assert'),
-    BaobabRouter = require('../baobab-router.js');
+import Baobab from 'baobab';
+import assert from 'assert';
+import BaobabRouter from '../baobab-router.js';
 
 
 
