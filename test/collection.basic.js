@@ -1,49 +1,52 @@
-'use strict';
-
 import Baobab from 'baobab';
 import assert from 'assert';
 import BaobabRouter from '../baobab-router.js';
 
-
-
-var state = {
-      view: null,
-      projectId: null,
-      projectData: null
+const state = {
+  view: null,
+  projectId: null,
+  projectData: null,
+};
+const routes = {
+  defaultRoute: '/home',
+  routes: [
+    {
+      path: '/home',
+      state: {
+        view: 'home',
+        projectId: null,
+      },
     },
-
-    routes = {
-      defaultRoute: '/home',
+    {
+      path: '/settings',
+      state: {
+        view: 'settings',
+        projectId: null,
+      },
+    },
+    {
+      path: '/project/:pid',
+      defaultRoute: '/dashboard',
+      state: {
+        projectId: ':pid',
+      },
       routes: [
-        { path: '/home',
+        {
+          path: '/settings',
           state: {
-            view: 'home',
-            projectId: null
-          } },
-        { path: '/settings',
-          state: {
-            view: 'settings',
-            projectId: null
-          } },
-        { path: '/project/:pid',
-          defaultRoute: '/dashboard',
-          state: {
-            projectId: ':pid'
+            view: 'project.settings',
           },
-          routes: [
-            { path: '/settings',
-              state: {
-                view: 'project.settings'
-              } },
-            { path: '/dashboard',
-              state: {
-                view: 'project.dashboard'
-              } }
-          ] }
-      ]
-    };
-
-
+        },
+        {
+          path: '/dashboard',
+          state: {
+            view: 'project.dashboard',
+          },
+        },
+      ],
+    },
+  ],
+};
 
 function _newTree(obj) {
   return new Baobab(obj || state);
@@ -53,13 +56,11 @@ function _newRouter(tree) {
   return new BaobabRouter(tree || _newTree(), routes);
 }
 
+describe('Basic example (from the documentation)', () => {
+  let tree;
+  let router;
 
-
-describe('Basic example (from the documentation)', function() {
-  var tree,
-      router;
-
-  beforeEach(function(done) {
+  beforeEach(done => {
     window.location.hash = '';
     tree = _newTree();
     router = _newRouter(tree);
@@ -67,7 +68,7 @@ describe('Basic example (from the documentation)', function() {
     setTimeout(done, 0);
   });
 
-  afterEach(function(done) {
+  afterEach(done => {
     router.kill();
     window.location.hash = '';
     router = null;
@@ -75,8 +76,8 @@ describe('Basic example (from the documentation)', function() {
     setTimeout(done, 0);
   });
 
-  it('should start on the default route when instanciated', function(done) {
-    setTimeout(function() {
+  it('should start on the default route when instanciated', done => {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('projectId'), null);
@@ -85,100 +86,96 @@ describe('Basic example (from the documentation)', function() {
     }, 0);
   });
 
-  it('should work with a recognized state (first level)', function(done) {
-    tree.set('view', 'settings')
-        .set('projectId', null)
-        .commit();
+  it('should work with a recognized state (first level)', done => {
+    tree
+      .set('view', 'settings')
+      .set('projectId', null)
+      .commit();
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/settings');
-
       done();
     }, 0);
   });
 
-  it('should work with a recognized state (deep)', function(done) {
-    tree.set('view', 'project.settings')
-        .set('projectId', '123456')
-        .commit();
+  it('should work with a recognized state (deep)', done => {
+    tree
+      .set('view', 'project.settings')
+      .set('projectId', '123456')
+      .commit();
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/project/123456/settings');
-
       done();
     }, 0);
   });
 
-  it('should work with a recognized URL (first level)', function(done) {
+  it('should work with a recognized URL (first level)', done => {
     window.location.hash = '/settings';
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(tree.get('view'), 'settings');
       assert.equal(tree.get('projectId'), null);
-
       done();
     }, 0);
   });
 
-  it('should work with a recognized URL (deep)', function(done) {
+  it('should work with a recognized URL (deep)', done => {
     window.location.hash = '/project/123456/dashboard';
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('projectId'), '123456');
-
       done();
     }, 0);
   });
 
-  it('should fallback on default route when state is not recognized (first level)', function(done) {
-    tree.set('view', 'something irrelevant')
-        .set('projectId', null)
-        .commit();
+  it('should fallback on default route when state is not recognized (first level)', done => {
+    tree
+      .set('view', 'something irrelevant')
+      .set('projectId', null)
+      .commit();
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('projectId'), null);
-
       done();
     }, 0);
   });
 
-  it('should fallback on default route when state is not recognized (deep)', function(done) {
-    tree.set('view', 'something irrelevant')
-        .set('projectId', 123456)
-        .commit();
+  it('should fallback on default route when state is not recognized (deep)', done => {
+    tree
+      .set('view', 'something irrelevant')
+      .set('projectId', 123456)
+      .commit();
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/project/123456/dashboard');
       assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('projectId'), 123456);
-
       done();
     }, 0);
   });
 
-  it('should fallback on default route when URL is not recognized (first level)', function(done) {
+  it('should fallback on default route when URL is not recognized (first level)', done => {
     window.location.hash = '/something/irrelevant';
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('projectId'), null);
-
       done();
     }, 0);
   });
 
-  it('should fallback on default route when URL is not recognized (deep)', function(done) {
+  it('should fallback on default route when URL is not recognized (deep)', done => {
     window.location.hash = '/project/123456/irrelevant';
 
-    setTimeout(function() {
+    setTimeout(() => {
       assert.equal(window.location.hash, '#/project/123456/dashboard');
       assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('projectId'), 123456);
-
       done();
     }, 0);
   });

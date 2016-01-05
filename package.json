@@ -4,7 +4,7 @@
   "description": "A router for Baobab",
   "main": "baobab-router.dist.js",
   "scripts": {
-    "lint": "eslint baobab-router.js",
+    "lint": "eslint baobab-router.js test/collection*.js",
     "build": "babel baobab-router.js -o baobab-router.dist.js --presets es2015 --plugins add-module-exports",
     "test:build": "browserify test/collections.js -o test/build/test.build.js -t [ babelify --presets [ es2015 ] ]",
     "test:exec": "mocha-phantomjs ./test/test.html",
@@ -47,7 +47,10 @@
     "globals": {
       "window": true,
       "describe": true,
-      "assert": true
+      "assert": true,
+      "it": true,
+      "afterEach": true,
+      "beforeEach": true
     }
   }
 }
