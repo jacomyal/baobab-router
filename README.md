@@ -23,7 +23,7 @@ Here is how to instanciate the state tree and the related router:
 var Baobab = require('baobab'),
     Router = require('baobab-router');
 
-    // Instanciate Baobab tree:
+// Instanciate Baobab tree:
 var tree = new Baobab({
       view: null,
       projectId: null,

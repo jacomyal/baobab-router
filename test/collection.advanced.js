@@ -124,11 +124,10 @@ describe('Ascending communication', () => {
   });
 
   it('should stop on the first matching case', done => {
-    tree
-      .set('logged', true)
-      .set('view', 'settings')
-      .set(['data', 'pid'], null)
-      .commit();
+    tree.set('logged', true);
+    tree.set('view', 'settings');
+    tree.set(['data', 'pid'], null);
+    tree.commit();
 
     assert.equal(window.location.hash, '#/settings');
     assert.equal(tree.get('view'), 'settings');
@@ -138,11 +137,10 @@ describe('Ascending communication', () => {
   });
 
   it('should check all cases until one matches', done => {
-    tree
-      .set('logged', true)
-      .set('view', 'home')
-      .set(['data', 'pid'], null)
-      .commit();
+    tree.set('logged', true);
+    tree.set('view', 'home');
+    tree.set(['data', 'pid'], null);
+    tree.commit();
 
     assert.equal(window.location.hash, '#/home');
     assert.equal(tree.get('view'), 'home');
@@ -152,11 +150,10 @@ describe('Ascending communication', () => {
   });
 
   it('should work with dynamics attributes', done => {
-    tree
-      .set('logged', true)
-      .set('view', 'project')
-      .set(['data', 'pid'], '123456')
-      .commit();
+    tree.set('logged', true);
+    tree.set('view', 'project');
+    tree.set(['data', 'pid'], '123456');
+    tree.commit();
 
     assert.equal(window.location.hash, '#/project/123456');
     assert.equal(tree.get('view'), 'project');
@@ -166,11 +163,10 @@ describe('Ascending communication', () => {
   });
 
   it('should work with children overriding values', done => {
-    tree
-      .set('logged', true)
-      .set('view', 'project.settings')
-      .set(['data', 'pid'], '123456')
-      .commit();
+    tree.set('logged', true);
+    tree.set('view', 'project.settings');
+    tree.set(['data', 'pid'], '123456');
+    tree.commit();
 
     assert.equal(window.location.hash, '#/project/123456/settings');
     assert.equal(tree.get('view'), 'project.settings');
@@ -180,11 +176,10 @@ describe('Ascending communication', () => {
   });
 
   it('should not match cases where some dynamic attributes are missing', done => {
-    tree
-      .set('logged', true)
-      .set('view', 'project')
-      .set(['data', 'pid'], null)
-      .commit();
+    tree.set('logged', true);
+    tree.set('view', 'project');
+    tree.set(['data', 'pid'], null);
+    tree.commit();
 
     assert.equal(window.location.hash, '#/home');
     assert.equal(tree.get('view'), 'home');
@@ -301,33 +296,40 @@ describe('Read-only state constraints', () => {
     setTimeout(done, 0);
   });
 
-  it('should fallback on a route with the good values for read-only constraints (ascending)', done => {
-    tree
-      .set('logged', false)
-      .set('view', 'home')
-      .set(['data', 'pid'], null)
-      .commit();
+  it(
+    'should fallback on a route with the good values for read-only ' +
+    'constraints (ascending)',
+    done => {
+      tree.set('logged', false);
+      tree.set('view', 'home');
+      tree.set(['data', 'pid'], null);
+      tree.commit();
 
-    setTimeout(() => {
-      assert.equal(window.location.hash, '#/login');
-      assert.equal(tree.get('logged'), false);
-      assert.equal(tree.get('view'), 'login');
-      assert.equal(tree.get('data', 'pid'), null);
-      done();
-    }, 0);
-  });
+      setTimeout(() => {
+        assert.equal(window.location.hash, '#/login');
+        assert.equal(tree.get('logged'), false);
+        assert.equal(tree.get('view'), 'login');
+        assert.equal(tree.get('data', 'pid'), null);
+        done();
+      }, 0);
+    }
+  );
 
-  it('should fallback on a route with the good values for read-only constraints (descending)', done => {
-    window.location.hash = '#/home';
+  it(
+    'should fallback on a route with the good values for read-only ' +
+    'constraints (descending)',
+    done => {
+      window.location.hash = '#/home';
 
-    setTimeout(() => {
-      assert.equal(window.location.hash, '#/login');
-      assert.equal(tree.get('logged'), false);
-      assert.equal(tree.get('view'), 'login');
-      assert.equal(tree.get('data', 'pid'), null);
-      done();
-    }, 0);
-  });
+      setTimeout(() => {
+        assert.equal(window.location.hash, '#/login');
+        assert.equal(tree.get('logged'), false);
+        assert.equal(tree.get('view'), 'login');
+        assert.equal(tree.get('data', 'pid'), null);
+        done();
+      }, 0);
+    }
+  );
 });
 
 describe('API and errors', () => {
@@ -404,7 +406,14 @@ describe('API and errors', () => {
       () => {
         router = new BaobabRouter(
           new Baobab({ toto: null }),
-          { routes: [{ state: { key: 'value' }, routes: [{ path: '/somePath', state: { key2: 'value2' } }] }] }
+          {
+            routes: [
+              {
+                state: { key: 'value' },
+                routes: [{ path: '/somePath', state: { key2: 'value2' } }],
+              },
+            ],
+          }
         );
       },
       /A route must have either a path or a default route/
@@ -425,100 +434,5 @@ describe('API and errors', () => {
     if (router2 && router2.kill) {
       router2.kill();
     }
-  });
-});
-
-describe('Facets support', () => {
-  let tree;
-  let router;
-
-  beforeEach(done => {
-    window.location.hash = '';
-    tree = new Baobab(
-
-      // Data
-      {
-        user: null,
-        view: null,
-      },
-
-      // Options
-      {
-        facets: {
-          logged: {
-            cursors: {
-              user: ['user'],
-            },
-            get: data => !!data.user,
-          },
-        },
-      }
-    );
-
-    router = new BaobabRouter(tree, {
-      readOnly: [['user']],
-      defaultRoute: '/',
-      routes: [
-        // Login
-        {
-          path: '/login',
-          facets: {
-            logged: false,
-          },
-          state: {
-            view: 'login',
-          },
-        },
-
-        // Home
-        {
-          path: '/',
-          facets: {
-            logged: true,
-          },
-          state: {
-            view: 'home',
-          },
-        },
-      ],
-    });
-
-    setTimeout(done, 0);
-  });
-
-  afterEach(done => {
-    router.kill();
-    window.location.hash = '';
-    router = null;
-
-    setTimeout(done, 0);
-  });
-
-  it('should work with both facets and state.', done => {
-    assert.equal(window.location.hash, '#/login');
-    assert.equal(tree.facets.logged.get(), false);
-    assert.equal(tree.get('view'), 'login');
-
-    window.location.hash = '';
-
-    // Trying to override hash
-    setTimeout(() => {
-      assert.equal(window.location.hash, '#/login');
-      assert.equal(tree.facets.logged.get(), false);
-      assert.equal(tree.get('view'), 'login');
-
-      // Setting our user
-      tree
-        .set('user', { name: 'John' })
-        .commit();
-
-      setTimeout(() => {
-        assert.equal(window.location.hash, '');
-        assert.equal(tree.facets.logged.get(), true);
-        assert.equal(tree.get('view'), 'home');
-
-        done();
-      }, 0);
-    }, 0);
   });
 });

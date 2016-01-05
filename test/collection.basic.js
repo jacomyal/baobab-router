@@ -87,10 +87,9 @@ describe('Basic example (from the documentation)', () => {
   });
 
   it('should work with a recognized state (first level)', done => {
-    tree
-      .set('view', 'settings')
-      .set('projectId', null)
-      .commit();
+    tree.set('view', 'settings');
+    tree.set('projectId', null);
+    tree.commit();
 
     setTimeout(() => {
       assert.equal(window.location.hash, '#/settings');
@@ -99,10 +98,9 @@ describe('Basic example (from the documentation)', () => {
   });
 
   it('should work with a recognized state (deep)', done => {
-    tree
-      .set('view', 'project.settings')
-      .set('projectId', '123456')
-      .commit();
+    tree.set('view', 'project.settings');
+    tree.set('projectId', '123456');
+    tree.commit();
 
     setTimeout(() => {
       assert.equal(window.location.hash, '#/project/123456/settings');
@@ -131,10 +129,9 @@ describe('Basic example (from the documentation)', () => {
   });
 
   it('should fallback on default route when state is not recognized (first level)', done => {
-    tree
-      .set('view', 'something irrelevant')
-      .set('projectId', null)
-      .commit();
+    tree.set('view', 'something irrelevant');
+    tree.set('projectId', null);
+    tree.commit();
 
     setTimeout(() => {
       assert.equal(window.location.hash, '#/home');
@@ -145,10 +142,9 @@ describe('Basic example (from the documentation)', () => {
   });
 
   it('should fallback on default route when state is not recognized (deep)', done => {
-    tree
-      .set('view', 'something irrelevant')
-      .set('projectId', 123456)
-      .commit();
+    tree.set('view', 'something irrelevant');
+    tree.set('projectId', 123456);
+    tree.commit();
 
     setTimeout(() => {
       assert.equal(window.location.hash, '#/project/123456/dashboard');

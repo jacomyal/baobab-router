@@ -354,15 +354,9 @@ function __extractPaths(state, dynamics = [], results = [], path = []) {
  * @return {route}             The well-formed route object.
  */
 function __makeRoutes(route, solver, baseTree, basePath = '') {
-  const routeTree = {};
-  if (route.state) {
-    routeTree.state = route.state;
-  }
-  if (route.facets) {
-    routeTree.facets = route.facets;
-  }
-
-  const { value, conflicts } = __deepMerge(baseTree || {}, routeTree);
+  const { value, conflicts } = __deepMerge(
+    baseTree || {},
+    route.state ? { state: route.state } : {});
 
   route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullTree = value;
@@ -390,25 +384,10 @@ function __makeRoutes(route, solver, baseTree, basePath = '') {
     route.overrides ||
     (route.routes || []).some(child => child.overrides);
 
-  function findFacets(facets, sub) {
-    for (const k in sub.facets || {}) {
-      if (sub.facets.hasOwnProperty(k)) {
-        facets[k] = true;
-      }
-    }
-
-    (sub.routes || []).reduce(findFacets, facets);
-    return facets;
-  }
   // Some root-specific verifications:
   if (arguments.length <= 2) {
-    // Find every facets in the tree:
-    route.facets = Object.keys((route.routes || []).reduce(findFacets, {}));
-
     // Check read-only paths:
-    route.readOnly = (route.readOnly || [])
-      .map(path => ['state'].concat(path))
-      .concat(route.facets.map(facet => ['facets', facet]));
+    route.readOnly = (route.readOnly || []).map(path => ['state'].concat(path));
 
     // The root must have a default route:
     if (!route.defaultRoute) {
@@ -475,10 +454,10 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   const _solver = _settings.solver || __defaultSolver;
   const _routesTree = __makeRoutes(__deepMerge(routes).value, _solver);
 
-  let _facet;
+  let _watcher;
   let _hashInterval;
   let _hashListener;
-  let _facetListener;
+  let _watcherListener;
   let _stored = window.location.hash.replace(/^#/, '');
 
   /* ****************
@@ -588,10 +567,6 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   function _checkState(basePath, baseRoute, baseTree) {
     const tree = baseTree || {
       state: _tree.get(),
-      facets: _routesTree.facets.reduce((res, facet) => {
-        res[facet] = _tree.facets[facet].get();
-        return res;
-      }, {}),
     };
     const route = baseRoute || _routesTree;
 
@@ -672,10 +647,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     }
 
     // Unbind the tree:
-    _facet.release();
-    _routesTree.facets.forEach(
-      facet => _tree.facets[facet].off('update', _facetListener)
-    );
+    _watcher.release();
     _tree.router = null;
   }
 
@@ -715,10 +687,10 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   }
 
   // Listen to the state changes:
-  _facetListener = () => _checkState();
+  _watcherListener = () => _checkState();
 
-  _facet = _tree.createFacet({
-    cursors: __extractPaths(
+  _watcher = _tree.watch(
+    __extractPaths(
       _routesTree.routes.reduce(
         function _extract(arr, child) {
           return (child.routes || []).reduce(
@@ -743,13 +715,10 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     ).reduce((result, obj, i) => {
       result['path_' + i] = obj.path;
       return result;
-    }, {}),
-  });
-
-  _facet.on('update', _facetListener);
-  _routesTree.facets.forEach(
-    facet => _tree.facets[facet].on('update', _facetListener)
+    }, {})
   );
+
+  _watcher.on('update', _watcherListener);
 
   // Export publics:
   this.kill = kill;

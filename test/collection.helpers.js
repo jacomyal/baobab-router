@@ -95,7 +95,7 @@ describe('BaobabRouter.__extractPaths', () => {
   });
 });
 
-describe('BaobabRouter.__extractPaths', () => {
+describe('BaobabRouter.__resolveURL', () => {
   it('should work with basic cases', () => {
     assert.equal(
       BaobabRouter.__resolveURL('a/b/c'),
@@ -128,7 +128,10 @@ describe('BaobabRouter.__extractPaths', () => {
 
 describe('BaobabRouter.__compareArrays', () => {
   it('should work with basic cases', () => {
-    assert.equal(BaobabRouter.__compareArrays(['abc', 123, null, false], ['abc', 123, null, false]), true);
+    assert.equal(BaobabRouter.__compareArrays(
+      ['abc', 123, null, false],
+      ['abc', 123, null, false]
+    ), true);
 
     assert.equal(BaobabRouter.__compareArrays([123], ['123']), false);
     assert.equal(BaobabRouter.__compareArrays([null], [undefined]), false);
@@ -160,7 +163,6 @@ describe('BaobabRouter.__makeRoutes', () => {
             {
               path: '/route_B1',
               state: { state_a1: { state_b1: 'A2.B1, a1.b1' } },
-              facets: { facet_a1: 'A2.B1, a1' },
             },
             {
               path: '/:route_dyn_B2',
@@ -180,7 +182,6 @@ describe('BaobabRouter.__makeRoutes', () => {
       defaultRoute: '/route_A1',
       readOnly: [
         ['state', 'state_a1', 'state_b1'],
-        ['facets', 'facet_a1'],
       ],
 
       // ADDED:
@@ -189,7 +190,6 @@ describe('BaobabRouter.__makeRoutes', () => {
       fullTree: {},
       overrides: false,
       fullPath: '',
-      facets: ['facet_a1'],
       fullDefaultPath: '/route_A1',
 
       routes: [
@@ -210,8 +210,16 @@ describe('BaobabRouter.__makeRoutes', () => {
             },
           },
           updates: [
-            { dynamic: false, path: ['state', 'state_a1', 'state_b1'], value: 'A1, a1.b1' },
-            { dynamic: false, path: ['state', 'state_a2'], value: 'A1, a2' },
+            {
+              dynamic: false,
+              path: ['state', 'state_a1', 'state_b1'],
+              value: 'A1, a1.b1',
+            },
+            {
+              dynamic: false,
+              path: ['state', 'state_a2'],
+              value: 'A1, a2',
+            },
           ],
         },
 
@@ -225,7 +233,11 @@ describe('BaobabRouter.__makeRoutes', () => {
           overrides: false,
           fullTree: { state: { state_a2: 'A2, a2' } },
           updates: [
-            { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
+            {
+              dynamic: false,
+              path: ['state', 'state_a2'],
+              value: 'A2, a2',
+            },
           ],
 
           routes: [
@@ -237,22 +249,23 @@ describe('BaobabRouter.__makeRoutes', () => {
               dynamics: [],
               fullPath: '/route_A2/route_B1',
               overrides: false,
-              facets: {
-                facet_a1: 'A2.B1, a1',
-              },
               fullTree: {
                 state: {
                   state_a1: { state_b1: 'A2.B1, a1.b1' },
                   state_a2: 'A2, a2',
                 },
-                facets: {
-                  facet_a1: 'A2.B1, a1',
-                },
               },
               updates: [
-                { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
-                { dynamic: false, path: ['state', 'state_a1', 'state_b1'], value: 'A2.B1, a1.b1' },
-                { dynamic: false, path: ['facets', 'facet_a1'], value: 'A2.B1, a1' },
+                {
+                  dynamic: false,
+                  path: ['state', 'state_a2'],
+                  value: 'A2, a2',
+                },
+                {
+                  dynamic: false,
+                  path: ['state', 'state_a1', 'state_b1'],
+                  value: 'A2.B1, a1.b1',
+                },
               ],
             },
             {
@@ -270,8 +283,16 @@ describe('BaobabRouter.__makeRoutes', () => {
                 },
               },
               updates: [
-                { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
-                { dynamic: true, path: ['state', 'state_a1', 'state_b1'], value: ':route_dyn_B2' },
+                {
+                  dynamic: false,
+                  path: ['state', 'state_a2'],
+                  value: 'A2, a2',
+                },
+                {
+                  dynamic: true,
+                  path: ['state', 'state_a1', 'state_b1'],
+                  value: ':route_dyn_B2',
+                },
               ],
               routes: [
                 {
@@ -290,9 +311,21 @@ describe('BaobabRouter.__makeRoutes', () => {
                     },
                   },
                   updates: [
-                    { dynamic: false, path: ['state', 'state_a2'], value: 'A2, a2' },
-                    { dynamic: true, path: ['state', 'state_a1', 'state_b1'], value: ':route_dyn_B2' },
-                    { dynamic: false, path: ['state', 'state_a3'], value: 'A2.B2.C1, a3' },
+                    {
+                      dynamic: false,
+                      path: ['state', 'state_a2'],
+                      value: 'A2, a2',
+                    },
+                    {
+                      dynamic: true,
+                      path: ['state', 'state_a1', 'state_b1'],
+                      value: ':route_dyn_B2',
+                    },
+                    {
+                      dynamic: false,
+                      path: ['state', 'state_a3'],
+                      value: 'A2.B2.C1, a3',
+                    },
                   ],
                 },
               ],
@@ -336,57 +369,73 @@ describe('BaobabRouter.__deepMerge', () => {
     assert.deepEqual(d, { value: { a: 1, b: 1, c: 1 }, conflicts: false });
   });
 
-  it('should find no conflict when different objects have the same value for the same simple path', () => {
-    const a = { a: 1, c: 1 };
-    const b = { b: 1, c: 1 };
-    const c = BaobabRouter.__deepMerge(a, b);
+  it(
+    'should find no conflict when different objects have the same value for ' +
+    'the same simple path',
+    () => {
+      const a = { a: 1, c: 1 };
+      const b = { b: 1, c: 1 };
+      const c = BaobabRouter.__deepMerge(a, b);
 
-    // Check that arguments have not been mutated:
-    assert.deepEqual(a, { a: 1, c: 1 });
-    assert.deepEqual(b, { b: 1, c: 1 });
+      // Check that arguments have not been mutated:
+      assert.deepEqual(a, { a: 1, c: 1 });
+      assert.deepEqual(b, { b: 1, c: 1 });
 
-    // Check the result:
-    assert.deepEqual(c, { value: { a: 1, b: 1, c: 1 }, conflicts: false });
-  });
+      // Check the result:
+      assert.deepEqual(c, { value: { a: 1, b: 1, c: 1 }, conflicts: false });
+    }
+  );
 
-  it('should find no conflict when different objects have the same value for the same deep path', () => {
-    const a = { a: 1, c: { d: 1 } };
-    const b = { b: 1, c: { d: 1 } };
-    const c = BaobabRouter.__deepMerge(a, b);
+  it(
+    'should find no conflict when different objects have the same value for ' +
+    'the same deep path',
+    () => {
+      const a = { a: 1, c: { d: 1 } };
+      const b = { b: 1, c: { d: 1 } };
+      const c = BaobabRouter.__deepMerge(a, b);
 
-    // Check that arguments have not been mutated:
-    assert.deepEqual(a, { a: 1, c: { d: 1 } });
-    assert.deepEqual(b, { b: 1, c: { d: 1 } });
+      // Check that arguments have not been mutated:
+      assert.deepEqual(a, { a: 1, c: { d: 1 } });
+      assert.deepEqual(b, { b: 1, c: { d: 1 } });
 
-    // Check the result:
-    assert.deepEqual(c, { value: { a: 1, b: 1, c: { d: 1 } }, conflicts: false });
-  });
+      // Check the result:
+      assert.deepEqual(c, { value: { a: 1, b: 1, c: { d: 1 } }, conflicts: false });
+    }
+  );
 
-  it('should find some conflict when different objects different values for the same simple path', () => {
-    const a = { a: 1, c: 1 };
-    const b = { b: 1, c: 2 };
-    const c = BaobabRouter.__deepMerge(a, b);
+  it(
+    'should find some conflict when different objects different values for ' +
+    'the same simple path',
+    () => {
+      const a = { a: 1, c: 1 };
+      const b = { b: 1, c: 2 };
+      const c = BaobabRouter.__deepMerge(a, b);
 
-    // Check that arguments have not been mutated:
-    assert.deepEqual(a, { a: 1, c: 1 });
-    assert.deepEqual(b, { b: 1, c: 2 });
+      // Check that arguments have not been mutated:
+      assert.deepEqual(a, { a: 1, c: 1 });
+      assert.deepEqual(b, { b: 1, c: 2 });
 
-    // Check the result:
-    assert.deepEqual(c, { value: { a: 1, b: 1, c: 2 }, conflicts: true });
-  });
+      // Check the result:
+      assert.deepEqual(c, { value: { a: 1, b: 1, c: 2 }, conflicts: true });
+    }
+  );
 
-  it('should find some conflict when different objects different values for the same deep path', () => {
-    const a = { a: 1, c: { d: 1 } };
-    const b = { b: 1, c: { d: 2 } };
-    const c = BaobabRouter.__deepMerge(a, b);
+  it(
+    'should find some conflict when different objects different values for ' +
+    'the same deep path',
+    () => {
+      const a = { a: 1, c: { d: 1 } };
+      const b = { b: 1, c: { d: 2 } };
+      const c = BaobabRouter.__deepMerge(a, b);
 
-    // Check that arguments have not been mutated:
-    assert.deepEqual(a, { a: 1, c: { d: 1 } });
-    assert.deepEqual(b, { b: 1, c: { d: 2 } });
+      // Check that arguments have not been mutated:
+      assert.deepEqual(a, { a: 1, c: { d: 1 } });
+      assert.deepEqual(b, { b: 1, c: { d: 2 } });
 
-    // Check the result:
-    assert.deepEqual(c, { value: { a: 1, b: 1, c: { d: 2 } }, conflicts: true });
-  });
+      // Check the result:
+      assert.deepEqual(c, { value: { a: 1, b: 1, c: { d: 2 } }, conflicts: true });
+    }
+  );
 });
 
 describe('BaobabRouter.__concatenatePath', () => {
