@@ -476,6 +476,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     const match = __doesHashMatch(route.fullPath, baseHash);
 
     let doCommit;
+    let doForceCommit;
     let hash = baseHash;
     let path = basePath || '';
 
@@ -521,11 +522,16 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         }
 
         if (
-          !_routesTree.readOnly.some(str => __compareArrays(update.path, str))
+          _routesTree.readOnly.every(
+            str => !__compareArrays(update.path, str)
+          ) &&
+          update.path.length > 1
         ) {
-          if (update.path.length > 1) {
+          if (_tree.get(update.path.slice(1)) !== update.value) {
             _tree.set(update.path.slice(1), update.value);
             doCommit = true;
+          } else {
+            doForceCommit = true;
           }
         }
       });
@@ -533,6 +539,8 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
       // Commit only if something has actually been updated:
       if (doCommit) {
         _tree.commit();
+      } else if (doForceCommit) {
+        _checkState(); //eslint-disable-line
       }
 
       return true;
