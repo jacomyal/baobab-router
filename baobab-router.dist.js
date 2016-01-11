@@ -450,6 +450,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     var match = __doesHashMatch(route.fullPath, baseHash);
 
     var doCommit = undefined;
+    var doForceCommit = undefined;
     var hash = baseHash;
     var path = basePath || '';
 
@@ -490,12 +491,14 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           update.value = hash.split('/')[route.fullPath.split('/').indexOf(update.value)];
         }
 
-        if (!_routesTree.readOnly.some(function (str) {
-          return __compareArrays(update.path, str);
-        })) {
-          if (update.path.length > 1) {
+        if (_routesTree.readOnly.every(function (str) {
+          return !__compareArrays(update.path, str);
+        }) && update.path.length > 1) {
+          if (_tree.get(update.path.slice(1)) !== update.value) {
             _tree.set(update.path.slice(1), update.value);
             doCommit = true;
+          } else {
+            doForceCommit = true;
           }
         }
       });
@@ -503,6 +506,8 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
       // Commit only if something has actually been updated:
       if (doCommit) {
         _tree.commit();
+      } else if (doForceCommit) {
+        _checkState(); //eslint-disable-line
       }
 
       return true;
