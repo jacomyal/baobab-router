@@ -60,6 +60,12 @@ describe('BaobabRouter.__doesStateMatch', () => {
       { a: { b: 'abc' } },
       [':d1']
     ), { ':d1': 'abc' });
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':d1' } },
+      { a: { b: null } },
+      [':d1']
+    ), null);
   });
 });
 
