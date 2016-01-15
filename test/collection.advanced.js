@@ -18,6 +18,7 @@ const loggedState = {
   view: 'home',
   data: {
     pid: null,
+    user: { name: 'John' },
   },
 };
 const routes = {
@@ -29,7 +30,7 @@ const routes = {
       state: {
         view: 'login',
         logged: false,
-        data: { pid: null },
+        data: { pid: null, user: null },
       },
     },
     {
@@ -216,6 +217,7 @@ describe('Descending communication', () => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('data', 'pid'), null);
+      assert.equal(tree.get('data', 'user', 'name'), 'John');
       done();
     }, 0);
   });
@@ -227,9 +229,36 @@ describe('Descending communication', () => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('data', 'pid'), null);
+      assert.equal(tree.get('data', 'user', 'name'), 'John');
       done();
     }, 0);
   });
+
+  /**
+   * Note:
+   * *****
+   * The following unit test has been disabled, because baobab-router cannot give the
+   * expected result in its current implementation. Since the usecase is somehow a
+   * problem, I prefer to let it here, because it represent pretty well the mess it
+   * can cause.
+   * Basically, when the router will be able to solve the stable pair state / hash
+   * without having to actually impact them until it's stable, then this case will
+   * no longer be a problem
+   */
+
+  /*
+  it('should fallback to the default route when no route matches - ter', done => {
+    window.location.hash = '#/login';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/home');
+      assert.equal(tree.get('view'), 'home');
+      assert.equal(tree.get('data', 'pid'), null);
+      assert.equal(tree.get('data', 'user', 'name'), 'John');
+      done();
+    }, 0);
+  });
+  */
 
   it('should work fine when a route does match', done => {
     window.location.hash = '#/home';
@@ -238,6 +267,7 @@ describe('Descending communication', () => {
       assert.equal(window.location.hash, '#/home');
       assert.equal(tree.get('view'), 'home');
       assert.equal(tree.get('data', 'pid'), null);
+      assert.equal(tree.get('data', 'user', 'name'), 'John');
       done();
     }, 0);
   });
