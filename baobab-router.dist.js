@@ -271,7 +271,7 @@ function __doesStateMatch(routeState, state) {
       return results;
 
       // Dynamics:
-    } else if (~dynamicValues.indexOf(routeState)) {
+    } else if (~dynamicValues.indexOf(routeState) && state) {
         results[routeState] = state;
         return results;
 
@@ -521,14 +521,13 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
    * @param  {string} hash The new hash.
    */
   function _updateHash(hash) {
-    if (_stored !== hash) {
+    var force = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+    if (_stored !== hash || force) {
       window.location.hash = hash;
 
-      // Force execute _checkHash:
-      if (hash !== _stored) {
-        _stored = hash;
-        _checkHash(_stored);
-      }
+      _stored = hash;
+      _checkHash(_stored);
     }
   }
 
@@ -593,9 +592,13 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
       if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
     }
-
     if (match) {
-      _updateHash(__resolveURL(route.defaultRoute ? route.fullDefaultPath : route.fullPath, match));
+      _updateHash(__resolveURL(route.defaultRoute ? route.fullDefaultPath : route.fullPath, match),
+      // If updating to a default route, then it might come from an invalid
+      // state. And if the same route is already set, then forcing the hash
+      // update is necessary to trigger the _checkHash to go back to a valid
+      // state:
+      !!route.defaultRoute);
 
       return true;
     }
