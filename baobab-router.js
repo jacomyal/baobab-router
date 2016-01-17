@@ -198,7 +198,7 @@ function __deepMerge() {
  */
 function __doesHashMatch(routeHash, hash, solver) {
   const routeArray = routeHash.split('/');
-  const hashArray = hash.split('/');
+  const hashArray = hash.replace(/\?.*$/, '').split('/');
 
   // Check lengths:
   if (routeArray.length > hashArray.length) {
