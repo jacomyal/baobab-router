@@ -20,6 +20,11 @@ const loggedState = {
     pid: null,
     user: { name: 'John' },
   },
+  settings: {
+    from: null,
+    size: null,
+    sort: null,
+  },
 };
 const routes = {
   defaultRoute: '/login',
@@ -60,8 +65,27 @@ const routes = {
               state: { view: 'project.settings' },
             },
             {
-              path: '/dashboard',
-              state: { view: 'project.dashboard' },
+              path: '/data',
+              query: {
+                f: ':from',
+                sz: ':size',
+                st: ':sort',
+              },
+              state: {
+                view: 'project.data',
+                settings: {
+                  from: ':from',
+                  size: ':size',
+                  sort: ':sort',
+                },
+              },
+            },
+            {
+              path: '/dashboard/:did',
+              state: {
+                view: 'project.dashboard',
+                did: ':did',
+              },
             },
           ],
         },
@@ -188,6 +212,52 @@ describe('Ascending communication', () => {
 
     setTimeout(done, 0);
   });
+
+  it('should work with routes with queries - and no query parameters', done => {
+    tree.set('logged', true);
+    tree.set('view', 'project.data');
+    tree.set(['data', 'pid'], '123456');
+    tree.set('settings', {
+      from: null,
+      size: null,
+      sort: null,
+    });
+    tree.commit();
+
+    assert.equal(window.location.hash, '#/project/123456/settings');
+    assert.equal(tree.get('view'), 'project.data');
+    assert.equal(tree.get('data', 'pid'), '123456');
+    assert.deepEqual(tree.get('settings'), {
+      from: null,
+      size: null,
+      sort: null,
+    });
+
+    setTimeout(done, 0);
+  });
+
+  it('should work with routes with queries - and some query parameters', done => {
+    tree.set('logged', true);
+    tree.set('view', 'project.data');
+    tree.set(['data', 'pid'], '123456');
+    tree.set('settings', {
+      from: '0',
+      size: '1000',
+      sort: null,
+    });
+    tree.commit();
+
+    assert.equal(window.location.hash, '#/project/123456/settings?f=0&sz=1000');
+    assert.equal(tree.get('view'), 'project.data');
+    assert.equal(tree.get('data', 'pid'), '123456');
+    assert.deepEqual(tree.get('settings'), {
+      from: '0',
+      size: '1000',
+      sort: null,
+    });
+
+    setTimeout(done, 0);
+  });
 });
 
 describe('Descending communication', () => {
@@ -302,6 +372,84 @@ describe('Descending communication', () => {
       assert.equal(tree.get('view'), 'project.settings');
       assert.equal(tree.get('data', 'pid'), '123456');
       done();
+    }, 0);
+  });
+
+  it('should work fine with a proper query', done => {
+    window.location.hash = '#/project/123456/data?st=abc';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/project/123456/data?st=abc');
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        from: null,
+        size: null,
+        sort: 'abc',
+      });
+      done();
+    }, 0);
+  });
+
+  it('should work fine with no query', done => {
+    window.location.hash = '#/project/123456/data';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/project/123456/data?st=abc');
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        from: null,
+        size: null,
+        sort: null,
+      });
+      done();
+    }, 0);
+  });
+
+  it('should remove unrecognized query parameters', done => {
+    window.location.hash = '#/project/123456/data?st=abc&irrelevant=true';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/project/123456/data?st=abc');
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        from: null,
+        size: null,
+        sort: 'abc',
+      });
+      done();
+    }, 0);
+  });
+
+  it('should preserve query parameters order in the URL', done => {
+    window.location.hash = '#/project/123456/data?f=0&sz=1000';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/project/123456/data?f=0&sz=1000');
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        from: '0',
+        size: '1000',
+        sort: null,
+      });
+
+      // Now in another order:
+      window.location.hash = '#/project/123456/data?sz=1000&f=0';
+
+      setTimeout(() => {
+        assert.equal(window.location.hash, '#/project/123456/data?sz=1000&f=0');
+        assert.equal(tree.get('view'), 'project.data');
+        assert.equal(tree.get('data', 'pid'), '123456');
+        assert.deepEqual(tree.get('settings'), {
+          from: '0',
+          size: '1000',
+          sort: null,
+        });
+        done();
+      }, 0);
     }, 0);
   });
 });

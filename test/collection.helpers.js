@@ -22,6 +22,24 @@ describe('BaobabRouter.__doesHashMatch', () => {
     assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123'), false);
   });
 
+  it('should work with queries', () => {
+    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c', '/a/b/c?toto=tutu'), true);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/b', '/a/b/c?toto=tutu'), true);
+
+    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c', '/a/c/b?toto=tutu'), false);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/b/c/d', '/a/c/b?toto=tutu'), false);
+
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123/c?toto=tutu'), true);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/123/c?toto=tutu'), true);
+
+    // Empty strings are not valid values for matching dynamic values:
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/?toto=tutu'), false);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a//c?toto=tutu'), false);
+
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123/d?toto=tutu'), false);
+    assert.equal(BaobabRouter.__doesHashMatch('/a/:b/c', '/a/123?toto=tutu'), false);
+  });
+
   it('should work with custom solvers', () => {
     assert.equal(BaobabRouter.__doesHashMatch('/a/:b', '/a/b/c', /:([^\/:]*)/g), true);
     assert.equal(BaobabRouter.__doesHashMatch('/a/{b}', '/a/b/c', /\{([^\/\}]*)\}/g), true);
@@ -104,30 +122,89 @@ describe('BaobabRouter.__extractPaths', () => {
 describe('BaobabRouter.__resolveURL', () => {
   it('should work with basic cases', () => {
     assert.equal(
-      BaobabRouter.__resolveURL('a/b/c'),
+      BaobabRouter.__resolveURL(
+        'a/b/c'
+      ),
       'a/b/c'
     );
 
     assert.equal(
-      BaobabRouter.__resolveURL('a/b/c', {}),
+      BaobabRouter.__resolveURL(
+        'a/b/c',
+        {}
+      ),
       'a/b/c'
     );
 
     assert.equal(
-      BaobabRouter.__resolveURL('a/:b/c/:d', { ':b': 'B', ':d': 'D' }),
+      BaobabRouter.__resolveURL(
+        'a/:b/c/:d',
+        { ':b': 'B', ':d': 'D' }
+      ),
       'a/B/c/D'
+    );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/:b/c/:d',
+        { ':b': 'B', ':d': 'D' },
+        { e: 'E', f: 'F' }
+      ),
+      'a/B/c/D?e=E&f=F'
+    );
+  });
+
+  it('should escape the dynamics and the query', () => {
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/:b/c',
+        { ':b': 'B/B' }
+      ),
+      'a/B/B/c'
+    );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/:b/c',
+        { ':b': 'B?B' }
+      ),
+      'a/B%3FB/c'
+    );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/b',
+        undefined,
+        { c: '?C=C&', d: 'D' }
+      ),
+      'a/b?c=%3FC%3DC%26&d=D'
     );
   });
 
   it('should work with edge cases', () => {
     assert.equal(
-      BaobabRouter.__resolveURL('a/:b/:b', { ':b': 'B' }),
+      BaobabRouter.__resolveURL(
+        'a/:b/:b',
+        { ':b': 'B' }
+      ),
       'a/B/B'
     );
 
     assert.equal(
-      BaobabRouter.__resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' }),
+      BaobabRouter.__resolveURL(
+        'a/:b/:c',
+        { ':c': 'C', ':d': 'D' }
+      ),
       'a/:b/C'
+    );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/:b/:c',
+        { ':c': 'C', ':d': 'D' },
+        { e: 'E', f: ':c' }
+      ),
+      'a/:b/C?e=E&f=%3Ac' // "%3A" === escape(':')
     );
   });
 });
@@ -166,10 +243,17 @@ describe('BaobabRouter.__makeRoutes', () => {
           path: '/route_A2',
           state: { state_a2: 'A2, a2' },
           routes: [
+            // Route with query:
             {
               path: '/route_B1',
-              state: { state_a1: { state_b1: 'A2.B1, a1.b1' } },
+              query: { q1: ':query' },
+              state: {
+                state_a1: { state_b1: 'A2.B1, a1.b1' },
+                state_a3: ':query',
+              },
             },
+
+            // Route with dynamics:
             {
               path: '/:route_dyn_B2',
               state: { state_a1: { state_b1: ':route_dyn_B2' } },
@@ -249,7 +333,11 @@ describe('BaobabRouter.__makeRoutes', () => {
           routes: [
             {
               path: '/route_B1',
-              state: { state_a1: { state_b1: 'A2.B1, a1.b1' } },
+              query: { q1: ':query' },
+              state: {
+                state_a1: { state_b1: 'A2.B1, a1.b1' },
+                state_a3: ':query',
+              },
 
               // ADDED:
               dynamics: [],
@@ -259,6 +347,7 @@ describe('BaobabRouter.__makeRoutes', () => {
                 state: {
                   state_a1: { state_b1: 'A2.B1, a1.b1' },
                   state_a2: 'A2, a2',
+                  state_a3: ':query',
                 },
               },
               updates: [
@@ -271,6 +360,11 @@ describe('BaobabRouter.__makeRoutes', () => {
                   dynamic: false,
                   path: ['state', 'state_a1', 'state_b1'],
                   value: 'A2.B1, a1.b1',
+                },
+                {
+                  dynamic: true,
+                  path: ['state', 'state_a3'],
+                  value: ':query',
                 },
               ],
             },
