@@ -35,9 +35,9 @@ function __compareArrays(a1, a2) {
 
 /**
  * This function takes a well formed URL from any BaobabRouter instance's route,
- * with potentially dynamic attributes to resolve, and an object with the
- * related values, and returns the URL with the values inserted instead of the
- * dynamics.
+ * with potentially dynamic and query attributes to resolve, and an object with
+ * the related values, and returns the URL with the query, and with the values
+ * inserted instead of the dynamics.
  *
  * Examples:
  * *********
@@ -53,16 +53,27 @@ function __compareArrays(a1, a2) {
  * > __resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' });
  * > // 'a/:b/C'
  *
+ * > __resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' }, { e: 'E', f: 'F' });
+ * > // 'a/:b/C?e=E&f=F'
+ *
  * @param  {string}  url The URL to resolve.
- * @param  {?object} obj An optional object with the dynamic values to insert.
+ * @param  {?object} dyn An optional object with the dynamic values to insert.
+ * @param  {?object} qry An optional object with the query values to insert.
  * @return {string}      The resolved URL.
  */
-function __resolveURL(url, obj = {}) {
+function __resolveURL(url, dyn = {}, qry = {}) {
+  const hash = url
+    .split('/')
+    .map(s => (s in dyn) ? escape(dyn[s]) : s)
+    .join('/');
+  const query = Object.keys(qry)
+    .map(k => escape(k) + '=' + escape(qry[k]))
+    .join('&');
+
   return (
-    url
-      .split('/')
-      .map(s => (s in obj) ? obj[s] : s)
-      .join('/')
+    query ?
+      hash + '?' + query :
+      hash
   );
 }
 
