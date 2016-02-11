@@ -67,8 +67,8 @@ const routes = {
             {
               path: '/data',
               query: {
-                f: ':from',
-                sz: ':size',
+                f: { match: ':from', cast: 'number' },
+                sz: { match: ':size', cast: 'number' },
                 st: ':sort',
               },
               state: {
@@ -241,8 +241,8 @@ describe('Ascending communication', () => {
     tree.set('view', 'project.data');
     tree.set(['data', 'pid'], '123456');
     tree.set('settings', {
-      from: '0',
-      size: '1000',
+      from: 0,
+      size: 1000,
       sort: null,
     });
     tree.commit();
@@ -251,8 +251,8 @@ describe('Ascending communication', () => {
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
-      from: '0',
-      size: '1000',
+      from: 0,
+      size: 1000,
       sort: null,
     });
 

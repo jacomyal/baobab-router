@@ -280,10 +280,14 @@ describe('BaobabRouter.__makeRoutes', () => {
             // Route with query:
             {
               path: '/route_B1',
-              query: { q1: ':query' },
+              query: {
+                q1: ':query1',
+                q2: { match: ':query2', cast: 'number' },
+              },
               state: {
                 state_a1: { state_b1: 'A2.B1, a1.b1' },
-                state_a3: ':query',
+                state_a3: ':query1',
+                state_a4: ':query2',
               },
             },
 
@@ -370,22 +374,27 @@ describe('BaobabRouter.__makeRoutes', () => {
           routes: [
             {
               path: '/route_B1',
-              query: { q1: ':query' },
+              query: {
+                q1: { match: ':query1' },
+                q2: { match: ':query2', cast: 'number' },
+              },
               state: {
                 state_a1: { state_b1: 'A2.B1, a1.b1' },
-                state_a3: ':query',
+                state_a3: ':query1',
+                state_a4: ':query2',
               },
 
               // ADDED:
               dynamics: [],
-              queryValues: [':query'],
+              queryValues: [':query1', ':query2'],
               fullPath: '/route_A2/route_B1',
               overrides: false,
               fullTree: {
                 state: {
                   state_a1: { state_b1: 'A2.B1, a1.b1' },
                   state_a2: 'A2, a2',
-                  state_a3: ':query',
+                  state_a3: ':query1',
+                  state_a4: ':query2',
                 },
               },
               updates: [
@@ -402,7 +411,12 @@ describe('BaobabRouter.__makeRoutes', () => {
                 {
                   dynamic: true,
                   path: ['state', 'state_a3'],
-                  value: ':query',
+                  value: ':query1',
+                },
+                {
+                  dynamic: true,
+                  path: ['state', 'state_a4'],
+                  value: ':query2',
                 },
               ],
             },

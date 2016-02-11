@@ -390,7 +390,13 @@ function __makeRoutes(route, solver, baseTree, basePath = '') {
   route.queryValues = [];
   for (const k in route.query || {}) {
     if (route.query.hasOwnProperty(k)) {
-      route.queryValues.push(route.query[k]);
+      if (typeof route.query[k] === 'string') {
+        route.query[k] = {
+          match: route.query[k],
+        };
+      }
+
+      route.queryValues.push(route.query[k].match);
     }
   }
 
@@ -548,7 +554,21 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         .split('&')
         .reduce((res, str) => {
           const arr = str.split('=');
-          res[(route.query || {})[arr[0]]] = arr[1];
+          const query = (route.query || {})[arr[0]] || {};
+          let value;
+
+          switch (query.cast) {
+            case 'number':
+              value = +arr[1];
+              break;
+            case 'boolean':
+              value = arr[1] === 'true' ? true : false;
+              break;
+            default:
+              value = arr[1];
+          }
+
+          res[query.match] = value;
           return res;
         }, {});
 
@@ -676,7 +696,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
       for (const k in route.query) {
         if (route.query.hasOwnProperty(k)) {
-          query[k] = match[route.query[k]];
+          query[k] = match[route.query[k].match];
         }
       }
 
