@@ -224,7 +224,7 @@ describe('Ascending communication', () => {
     });
     tree.commit();
 
-    assert.equal(window.location.hash, '#/project/123456/settings');
+    assert.equal(window.location.hash, '#/project/123456/data');
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
@@ -247,7 +247,7 @@ describe('Ascending communication', () => {
     });
     tree.commit();
 
-    assert.equal(window.location.hash, '#/project/123456/settings?f=0&sz=1000');
+    assert.equal(window.location.hash, '#/project/123456/data?f=0&sz=1000');
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
@@ -395,7 +395,7 @@ describe('Descending communication', () => {
     window.location.hash = '#/project/123456/data';
 
     setTimeout(() => {
-      assert.equal(window.location.hash, '#/project/123456/data?st=abc');
+      assert.equal(window.location.hash, '#/project/123456/data');
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
@@ -420,36 +420,6 @@ describe('Descending communication', () => {
         sort: 'abc',
       });
       done();
-    }, 0);
-  });
-
-  it('should preserve query parameters order in the URL', done => {
-    window.location.hash = '#/project/123456/data?f=0&sz=1000';
-
-    setTimeout(() => {
-      assert.equal(window.location.hash, '#/project/123456/data?f=0&sz=1000');
-      assert.equal(tree.get('view'), 'project.data');
-      assert.equal(tree.get('data', 'pid'), '123456');
-      assert.deepEqual(tree.get('settings'), {
-        from: '0',
-        size: '1000',
-        sort: null,
-      });
-
-      // Now in another order:
-      window.location.hash = '#/project/123456/data?sz=1000&f=0';
-
-      setTimeout(() => {
-        assert.equal(window.location.hash, '#/project/123456/data?sz=1000&f=0');
-        assert.equal(tree.get('view'), 'project.data');
-        assert.equal(tree.get('data', 'pid'), '123456');
-        assert.deepEqual(tree.get('settings'), {
-          from: '0',
-          size: '1000',
-          sort: null,
-        });
-        done();
-      }, 0);
     }, 0);
   });
 });

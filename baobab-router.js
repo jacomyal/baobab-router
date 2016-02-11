@@ -67,6 +67,7 @@ function __resolveURL(url, dyn = {}, qry = {}) {
     .map(s => (s in dyn) ? escape(dyn[s]) : s)
     .join('/');
   const query = Object.keys(qry)
+    .filter(k => qry[k] !== null && qry[k] !== undefined)
     .map(k => escape(k) + '=' + escape(qry[k]))
     .join('&');
 
@@ -228,18 +229,21 @@ function __doesHashMatch(routeHash, hash, solver) {
  * Scalars are compared with the "===" operator, but another test checks if both
  * values to treat them as the same value.
  *
- * @param  {object}  routeState    The route's state constraints.
- * @param  {object}  hash          The current state.
- * @param  {array}   dynamicValues The array of the dynamic values.
- * @return {?object}               Returns an object with the dynamic values if
- *                                 the state does match the constraints, and
- *                                 null else.
+ * The difference between the query and the dynamic values is that null dynamic
+ * values are not allowed, while null query parameters are valid.
+ *
+ * @param  {object}  routeState The route's state constraints.
+ * @param  {object}  hash       The current state.
+ * @param  {array}   dynamics   The array of the dynamic values.
+ * @param  {array}   query      The array of the query values.
+ * @return {?object}            Returns an object with the dynamic values if the
+ *                              state does match the constraints, and null else.
  */
-function __doesStateMatch(routeState, state, dynamicValues = []) {
+function __doesStateMatch(routeState, state, dynamics, query) {
   let results = {};
 
   function searchRoutes(val, i) {
-    const localResults = __doesStateMatch(val, state[i], dynamicValues);
+    const localResults = __doesStateMatch(val, state[i], dynamics, query);
     if (localResults) {
       results = __deepMerge(results, localResults);
       return true;
@@ -269,7 +273,8 @@ function __doesStateMatch(routeState, state, dynamicValues = []) {
         const localResults = __doesStateMatch(
           routeState[k],
           state[k],
-          dynamicValues
+          dynamics,
+          query
         );
         if (localResults) {
           results = __deepMerge(results, localResults).value;
@@ -282,7 +287,15 @@ function __doesStateMatch(routeState, state, dynamicValues = []) {
     return results;
 
   // Dynamics:
-  } else if (~dynamicValues.indexOf(routeState) && state) {
+  } else if (~(dynamics || []).indexOf(routeState) && state) {
+    results[routeState] = state;
+    return results;
+
+  // Query:
+  } else if (
+    ~(query || []).indexOf(routeState) &&
+    !~(dynamics || []).indexOf(routeState)
+  ) {
     results[routeState] = state;
     return results;
 
@@ -373,7 +386,18 @@ function __makeRoutes(route, solver, baseTree, basePath = '') {
   route.fullTree = value;
   route.overrides = conflicts;
   route.dynamics = route.fullPath.match(solver) || [];
-  route.updates = __extractPaths(route.fullTree, route.dynamics);
+
+  route.queryValues = [];
+  for (const k in route.query || {}) {
+    if (route.query.hasOwnProperty(k)) {
+      route.queryValues.push(route.query[k]);
+    }
+  }
+
+  route.updates = __extractPaths(
+    route.fullTree,
+    route.dynamics.concat(route.queryValues)
+  );
 
   if (route.defaultRoute) {
     route.fullDefaultPath =
@@ -519,6 +543,15 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
+      const queryValues = hash
+        .replace(/^[^\?]*\??/, '')
+        .split('&')
+        .reduce((res, str) => {
+          const arr = str.split('=');
+          res[(route.query || {})[arr[0]]] = arr[1];
+          return res;
+        }, {});
+
       // Apply updates:
       route.updates.map(obj => {
         const update = {
@@ -529,7 +562,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         if (obj.dynamic) {
           update.value = hash.split('/')[
             route.fullPath.split('/').indexOf(update.value)
-          ];
+          ] || queryValues[update.value];
         }
 
         if (
@@ -588,8 +621,8 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // Check if route match:
     const match = baseTree ?
-      __doesStateMatch(tree, route.fullTree, route.dynamics) :
-      __doesStateMatch(route.fullTree, tree, route.dynamics);
+      __doesStateMatch(tree, route.fullTree, route.dynamics, route.queryValues) :
+      __doesStateMatch(route.fullTree, tree, route.dynamics, route.queryValues);
 
     if (!match && arguments.length > 0 && !route.overrides) {
       return false;
@@ -637,13 +670,23 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         return true;
       }
     }
+
     if (match) {
+      const query = {};
+
+      for (const k in route.query) {
+        if (route.query.hasOwnProperty(k)) {
+          query[k] = match[route.query[k]];
+        }
+      }
+
       _updateHash(
         __resolveURL(
           route.defaultRoute ?
             route.fullDefaultPath :
             route.fullPath,
-          match
+          match,
+          query
         ),
         // If updating to a default route, then it might come from an invalid
         // state. And if the same route is already set, then forcing the hash

@@ -72,7 +72,7 @@ describe('BaobabRouter.__doesStateMatch', () => {
     ), null);
   });
 
-  it('should work with dynamic attributes', () => {
+  it('should work with dynamic and query attributes', () => {
     assert.deepEqual(BaobabRouter.__doesStateMatch(
       { a: { b: ':d1' } },
       { a: { b: 'abc' } },
@@ -82,6 +82,40 @@ describe('BaobabRouter.__doesStateMatch', () => {
     assert.deepEqual(BaobabRouter.__doesStateMatch(
       { a: { b: ':d1' } },
       { a: { b: null } },
+      [':d1']
+    ), null);
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':d1' } },
+      { a: { b: null } },
+      [':d1']
+    ), null);
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':d1', c: ':q1' } },
+      { a: { b: 'abc', c: 'def' } },
+      [':d1'],
+      [':q1']
+    ), { ':d1': 'abc', ':q1': 'def' });
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':q1' } },
+      { a: { b: null } },
+      null,
+      [':q1']
+    ), { ':q1': null });
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':q1' } },
+      { a: {} },
+      null,
+      [':q1']
+    ), { ':q1': null });
+
+    assert.deepEqual(BaobabRouter.__doesStateMatch(
+      { a: { b: ':d1' } },
+      { a: { b: null } },
+      [':d1'],
       [':d1']
     ), null);
   });
@@ -277,6 +311,7 @@ describe('BaobabRouter.__makeRoutes', () => {
       // ADDED:
       updates: [],
       dynamics: [],
+      queryValues: [],
       fullTree: {},
       overrides: false,
       fullPath: '',
@@ -291,6 +326,7 @@ describe('BaobabRouter.__makeRoutes', () => {
 
           // ADDED:
           dynamics: [],
+          queryValues: [],
           fullPath: '/route_A1',
           overrides: false,
           fullTree: {
@@ -319,6 +355,7 @@ describe('BaobabRouter.__makeRoutes', () => {
 
           // ADDED:
           dynamics: [],
+          queryValues: [],
           fullPath: '/route_A2',
           overrides: false,
           fullTree: { state: { state_a2: 'A2, a2' } },
@@ -341,6 +378,7 @@ describe('BaobabRouter.__makeRoutes', () => {
 
               // ADDED:
               dynamics: [],
+              queryValues: [':query'],
               fullPath: '/route_A2/route_B1',
               overrides: false,
               fullTree: {
@@ -376,6 +414,7 @@ describe('BaobabRouter.__makeRoutes', () => {
               overrides: false,
               fullPath: '/route_A2/:route_dyn_B2',
               dynamics: [':route_dyn_B2'],
+              queryValues: [],
               fullTree: {
                 state: {
                   state_a1: { state_b1: ':route_dyn_B2' },
@@ -403,6 +442,7 @@ describe('BaobabRouter.__makeRoutes', () => {
                   overrides: false,
                   fullPath: '/route_A2/:route_dyn_B2/route_dyn_C1',
                   dynamics: [':route_dyn_B2'],
+                  queryValues: [],
                   fullTree: {
                     state: {
                       state_a1: { state_b1: ':route_dyn_B2' },
