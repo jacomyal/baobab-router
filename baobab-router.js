@@ -68,7 +68,11 @@ function __resolveURL(url, dyn = {}, qry = {}) {
     .join('/');
   const query = Object.keys(qry)
     .filter(k => qry[k] !== null && qry[k] !== undefined)
-    .map(k => escape(k) + '=' + escape(qry[k]))
+    .map(k => escape(k) + '=' + escape(
+      (typeof qry[k] === 'object' && qry[k]) ?
+        JSON.stringify(qry[k]) :
+        ('' + qry[k])
+    ))
     .join('&');
 
   return (
@@ -555,17 +559,26 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         .reduce((res, str) => {
           const arr = str.split('=');
           const query = (route.query || {})[arr[0]] || {};
-          let value;
+          let value = unescape(arr[1]);
 
           switch (query.cast) {
             case 'number':
-              value = +arr[1];
+              value = +value;
               break;
             case 'boolean':
-              value = arr[1] === 'true' ? true : false;
+              value = value === 'true' ? true : false;
+              break;
+            case 'json':
+              try {
+                value = value ?
+                  JSON.parse(value) :
+                  null;
+              } catch (e) {
+                value = null;
+              }
               break;
             default:
-              value = arr[1];
+              // Nothing actually...
           }
 
           res[query.match] = value;

@@ -24,6 +24,7 @@ const loggedState = {
     from: null,
     size: null,
     sort: null,
+    query: null,
   },
 };
 const routes = {
@@ -67,6 +68,7 @@ const routes = {
             {
               path: '/data',
               query: {
+                q: { match: ':query', cast: 'json' },
                 f: { match: ':from', cast: 'number' },
                 sz: { match: ':size', cast: 'number' },
                 st: ':sort',
@@ -74,6 +76,7 @@ const routes = {
               state: {
                 view: 'project.data',
                 settings: {
+                  query: ':query',
                   from: ':from',
                   size: ':size',
                   sort: ':sort',
@@ -221,6 +224,7 @@ describe('Ascending communication', () => {
       from: null,
       size: null,
       sort: null,
+      query: null,
     });
     tree.commit();
 
@@ -231,6 +235,7 @@ describe('Ascending communication', () => {
       from: null,
       size: null,
       sort: null,
+      query: null,
     });
 
     setTimeout(done, 0);
@@ -244,16 +249,21 @@ describe('Ascending communication', () => {
       from: 0,
       size: 1000,
       sort: null,
+      query: { search: 'toto' },
     });
     tree.commit();
 
-    assert.equal(window.location.hash, '#/project/123456/data?f=0&sz=1000');
+    assert.equal(
+      window.location.hash,
+      '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&f=0&sz=1000'
+    );
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
       from: 0,
       size: 1000,
       sort: null,
+      query: { search: 'toto' },
     });
 
     setTimeout(done, 0);
@@ -386,6 +396,7 @@ describe('Descending communication', () => {
         from: null,
         size: null,
         sort: 'abc',
+        query: null,
       });
       done();
     }, 0);
@@ -402,6 +413,7 @@ describe('Descending communication', () => {
         from: null,
         size: null,
         sort: null,
+        query: null,
       });
       done();
     }, 0);
@@ -418,6 +430,7 @@ describe('Descending communication', () => {
         from: null,
         size: null,
         sort: 'abc',
+        query: null,
       });
       done();
     }, 0);
