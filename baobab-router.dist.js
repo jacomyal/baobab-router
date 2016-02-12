@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 /**
  * ***********************
@@ -39,9 +39,9 @@ function __compareArrays(a1, a2) {
 
 /**
  * This function takes a well formed URL from any BaobabRouter instance's route,
- * with potentially dynamic attributes to resolve, and an object with the
- * related values, and returns the URL with the values inserted instead of the
- * dynamics.
+ * with potentially dynamic and query attributes to resolve, and an object with
+ * the related values, and returns the URL with the query, and with the values
+ * inserted instead of the dynamics.
  *
  * Examples:
  * *********
@@ -57,16 +57,28 @@ function __compareArrays(a1, a2) {
  * > __resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' });
  * > // 'a/:b/C'
  *
+ * > __resolveURL('a/:b/:c', { ':c': 'C', ':d': 'D' }, { e: 'E', f: 'F' });
+ * > // 'a/:b/C?e=E&f=F'
+ *
  * @param  {string}  url The URL to resolve.
- * @param  {?object} obj An optional object with the dynamic values to insert.
+ * @param  {?object} dyn An optional object with the dynamic values to insert.
+ * @param  {?object} qry An optional object with the query values to insert.
  * @return {string}      The resolved URL.
  */
 function __resolveURL(url) {
-  var obj = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+  var dyn = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+  var qry = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-  return url.split('/').map(function (s) {
-    return s in obj ? obj[s] : s;
+  var hash = url.split('/').map(function (s) {
+    return s in dyn ? escape(dyn[s]) : s;
   }).join('/');
+  var query = Object.keys(qry).filter(function (k) {
+    return qry[k] !== null && qry[k] !== undefined;
+  }).map(function (k) {
+    return escape(k) + '=' + escape(qry[k]);
+  }).join('&');
+
+  return query ? hash + '?' + query : hash;
 }
 
 /**
@@ -192,7 +204,7 @@ function __deepMerge() {
  */
 function __doesHashMatch(routeHash, hash, solver) {
   var routeArray = routeHash.split('/');
-  var hashArray = hash.split('/');
+  var hashArray = hash.replace(/\?.*$/, '').split('/');
 
   // Check lengths:
   if (routeArray.length > hashArray.length) {
@@ -219,20 +231,21 @@ function __doesHashMatch(routeHash, hash, solver) {
  * Scalars are compared with the "===" operator, but another test checks if both
  * values to treat them as the same value.
  *
- * @param  {object}  routeState    The route's state constraints.
- * @param  {object}  hash          The current state.
- * @param  {array}   dynamicValues The array of the dynamic values.
- * @return {?object}               Returns an object with the dynamic values if
- *                                 the state does match the constraints, and
- *                                 null else.
+ * The difference between the query and the dynamic values is that null dynamic
+ * values are not allowed, while null query parameters are valid.
+ *
+ * @param  {object}  routeState The route's state constraints.
+ * @param  {object}  hash       The current state.
+ * @param  {array}   dynamics   The array of the dynamic values.
+ * @param  {array}   query      The array of the query values.
+ * @return {?object}            Returns an object with the dynamic values if the
+ *                              state does match the constraints, and null else.
  */
-function __doesStateMatch(routeState, state) {
-  var dynamicValues = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-
+function __doesStateMatch(routeState, state, dynamics, query) {
   var results = {};
 
   function searchRoutes(val, i) {
-    var localResults = __doesStateMatch(val, state[i], dynamicValues);
+    var localResults = __doesStateMatch(val, state[i], dynamics, query);
     if (localResults) {
       results = __deepMerge(results, localResults);
       return true;
@@ -259,7 +272,7 @@ function __doesStateMatch(routeState, state) {
 
       for (var k in routeState) {
         if (routeState.hasOwnProperty(k)) {
-          var localResults = __doesStateMatch(routeState[k], state[k], dynamicValues);
+          var localResults = __doesStateMatch(routeState[k], state[k], dynamics, query);
           if (localResults) {
             results = __deepMerge(results, localResults).value;
           } else {
@@ -271,18 +284,23 @@ function __doesStateMatch(routeState, state) {
       return results;
 
       // Dynamics:
-    } else if (~dynamicValues.indexOf(routeState) && state) {
+    } else if (~(dynamics || []).indexOf(routeState) && state) {
         results[routeState] = state;
         return results;
 
-        // Null / undefined cases:
-      } else if ((routeState === undefined || routeState === null) && (state === undefined || state === null)) {
+        // Query:
+      } else if (~(query || []).indexOf(routeState) && ! ~(dynamics || []).indexOf(routeState)) {
+          results[routeState] = state;
           return results;
 
-          // Other scalars:
-        } else if (routeState === state) {
+          // Null / undefined cases:
+        } else if ((routeState === undefined || routeState === null) && (state === undefined || state === null)) {
             return results;
-          }
+
+            // Other scalars:
+          } else if (routeState === state) {
+              return results;
+            }
 
   return null;
 }
@@ -352,11 +370,26 @@ function __makeRoutes(route, solver, baseTree) {
   var value = _deepMerge.value;
   var conflicts = _deepMerge.conflicts;
 
+
   route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullTree = value;
   route.overrides = conflicts;
   route.dynamics = route.fullPath.match(solver) || [];
-  route.updates = __extractPaths(route.fullTree, route.dynamics);
+
+  route.queryValues = [];
+  for (var k in route.query || {}) {
+    if (route.query.hasOwnProperty(k)) {
+      if (typeof route.query[k] === 'string') {
+        route.query[k] = {
+          match: route.query[k]
+        };
+      }
+
+      route.queryValues.push(route.query[k].match);
+    }
+  }
+
+  route.updates = __extractPaths(route.fullTree, route.dynamics.concat(route.queryValues));
 
   if (route.defaultRoute) {
     route.fullDefaultPath = __concatenatePaths(route.fullPath, route.defaultRoute);
@@ -480,37 +513,63 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
-      // Apply updates:
-      route.updates.map(function (obj) {
-        var update = {
-          path: obj.path,
-          value: obj.value
-        };
+      var _ret = function () {
+        var queryValues = hash.replace(/^[^\?]*\??/, '').split('&').reduce(function (res, str) {
+          var arr = str.split('=');
+          var query = (route.query || {})[arr[0]] || {};
+          var value = undefined;
 
-        if (obj.dynamic) {
-          update.value = hash.split('/')[route.fullPath.split('/').indexOf(update.value)];
-        }
-
-        if (_routesTree.readOnly.every(function (str) {
-          return !__compareArrays(update.path, str);
-        }) && update.path.length > 1) {
-          if (_tree.get(update.path.slice(1)) !== update.value) {
-            _tree.set(update.path.slice(1), update.value);
-            doCommit = true;
-          } else {
-            doForceCommit = true;
+          switch (query.cast) {
+            case 'number':
+              value = +arr[1];
+              break;
+            case 'boolean':
+              value = arr[1] === 'true' ? true : false;
+              break;
+            default:
+              value = arr[1];
           }
+
+          res[query.match] = value;
+          return res;
+        }, {});
+
+        // Apply updates:
+        route.updates.map(function (obj) {
+          var update = {
+            path: obj.path,
+            value: obj.value
+          };
+
+          if (obj.dynamic) {
+            update.value = hash.split('/')[route.fullPath.split('/').indexOf(update.value)] || queryValues[update.value];
+          }
+
+          if (_routesTree.readOnly.every(function (str) {
+            return !__compareArrays(update.path, str);
+          }) && update.path.length > 1) {
+            if (_tree.get(update.path.slice(1)) !== update.value) {
+              _tree.set(update.path.slice(1), update.value);
+              doCommit = true;
+            } else {
+              doForceCommit = true;
+            }
+          }
+        });
+
+        // Commit only if something has actually been updated:
+        if (doCommit) {
+          _tree.commit();
+        } else if (doForceCommit) {
+          _checkState(); //eslint-disable-line
         }
-      });
 
-      // Commit only if something has actually been updated:
-      if (doCommit) {
-        _tree.commit();
-      } else if (doForceCommit) {
-        _checkState(); //eslint-disable-line
-      }
+        return {
+          v: true
+        };
+      }();
 
-      return true;
+      if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
     }
   }
 
@@ -545,7 +604,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     var route = baseRoute || _routesTree;
 
     // Check if route match:
-    var match = baseTree ? __doesStateMatch(tree, route.fullTree, route.dynamics) : __doesStateMatch(route.fullTree, tree, route.dynamics);
+    var match = baseTree ? __doesStateMatch(tree, route.fullTree, route.dynamics, route.queryValues) : __doesStateMatch(route.fullTree, tree, route.dynamics, route.queryValues);
 
     if (!match && arguments.length > 0 && !route.overrides) {
       return false;
@@ -561,7 +620,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     // If the root route did not find any match, let's compare the tree with
     // only the read-only restrictions:
     if (!arguments.length) {
-      var _ret = (function () {
+      var _ret2 = function () {
         _stored = null;
 
         var restrictedTree = __extractPaths(tree).filter(function (obj) {
@@ -588,12 +647,21 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
             v: true
           };
         }
-      })();
+      }();
 
-      if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+      if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
     }
+
     if (match) {
-      _updateHash(__resolveURL(route.defaultRoute ? route.fullDefaultPath : route.fullPath, match),
+      var query = {};
+
+      for (var k in route.query) {
+        if (route.query.hasOwnProperty(k)) {
+          query[k] = match[route.query[k].match];
+        }
+      }
+
+      _updateHash(__resolveURL(route.defaultRoute ? route.fullDefaultPath : route.fullPath, match, query),
       // If updating to a default route, then it might come from an invalid
       // state. And if the same route is already set, then forcing the hash
       // update is necessary to trigger the _checkHash to go back to a valid
@@ -633,7 +701,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
   // Listen to the hash changes:
   if ('onhashchange' in window) {
-    _hashListener = function () {
+    _hashListener = function _hashListener() {
       var hash = window.location.hash.replace(/^#/, '');
       if (hash !== _stored) {
         _stored = hash;
@@ -654,7 +722,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   }
 
   // Listen to the state changes:
-  _watcherListener = function () {
+  _watcherListener = function _watcherListener() {
     return _checkState();
   };
 
@@ -685,7 +753,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.0.0';
+BaobabRouter.version = '2.1.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
