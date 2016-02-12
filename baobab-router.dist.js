@@ -75,7 +75,7 @@ function __resolveURL(url) {
   var query = Object.keys(qry).filter(function (k) {
     return qry[k] !== null && qry[k] !== undefined;
   }).map(function (k) {
-    return escape(k) + '=' + escape(qry[k]);
+    return escape(k) + '=' + escape(_typeof(qry[k]) === 'object' && qry[k] ? JSON.stringify(qry[k]) : '' + qry[k]);
   }).join('&');
 
   return query ? hash + '?' + query : hash;
@@ -517,17 +517,24 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         var queryValues = hash.replace(/^[^\?]*\??/, '').split('&').reduce(function (res, str) {
           var arr = str.split('=');
           var query = (route.query || {})[arr[0]] || {};
-          var value = undefined;
+          var value = unescape(arr[1]);
 
           switch (query.cast) {
             case 'number':
-              value = +arr[1];
+              value = +value;
               break;
             case 'boolean':
-              value = arr[1] === 'true' ? true : false;
+              value = value === 'true' ? true : false;
+              break;
+            case 'json':
+              try {
+                value = value ? JSON.parse(value) : null;
+              } catch (e) {
+                value = null;
+              }
               break;
             default:
-              value = arr[1];
+            // Nothing actually...
           }
 
           res[query.match] = value;
@@ -753,7 +760,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.1.0';
+BaobabRouter.version = '2.2.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
