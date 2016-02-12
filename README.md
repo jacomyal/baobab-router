@@ -85,19 +85,17 @@ In the following examples, the state does exactly match a route:
 
 ```javascript
 () => {
-  tree
-    .set('view', 'settings')
-    .set('projectId', null)
-    .commit();
+  tree.set('view', 'settings');
+  tree.set('projectId', null);
+  tree.commit();
 
   setTimeout(() => console.log(window.location.hash === '#/settings'), 0);
 }
 
 () => {
-  tree
-    .set('view', 'project.settings')
-    .set('projectId', '123456')
-    .commit();
+  tree.set('view', 'project.settings');
+  tree.set('projectId', '123456');
+  tree.commit();
 
   setTimeout(() => (
     console.log(window.location.hash === '#/project/123456/settings')
@@ -127,10 +125,9 @@ In the three following examples, the state does not match any route, so the rout
 
 ```javascript
 () => {
-  tree
-    .set('view', 'something irrelevant')
-    .set('projectId', null)
-    .commit();
+  tree.set('view', 'something irrelevant');
+  tree.set('projectId', null);
+  tree.commit();
 
   setTimeout(() => {
     console.log(window.location.hash === '#/home');
@@ -140,10 +137,9 @@ In the three following examples, the state does not match any route, so the rout
 });
 
 () => {
-  tree
-    .set('view', 'something irrelevant')
-    .set('projectId', 123456)
-    .commit();
+  tree.set('view', 'something irrelevant');
+  tree.set('projectId', 123456);
+  tree.commit();
 
   setTimeout(() => {
     console.log(window.location.hash === '#/project/123456/dashboard');
@@ -263,11 +259,10 @@ Here is how the updated application behaves on some specific cases:
 
 ```javascript
 () => {
-  tree
-    .set('logged', false)
-    .set('view', 'project.settings')
-    .set('projectId', '123456')
-    .commit();
+  tree.set('logged', false);
+  tree.set('view', 'project.settings');
+  tree.set('projectId', '123456');
+  tree.commit();
 
   setTimeout(() => {
     console.log(window.location.hash === '#/login');
@@ -277,11 +272,10 @@ Here is how the updated application behaves on some specific cases:
 }
 
 () => {
-  tree
-    .set('logged', true)
-    .set('view', 'project.settings')
-    .set('projectId', '123456')
-    .commit();
+  tree.set('logged', true);
+  tree.set('view', 'project.settings');
+  tree.set('projectId', '123456');
+  tree.commit();
 
   setTimeout(() => {
     console.log(window.location.hash === '#/project/123456/settings');
@@ -291,7 +285,8 @@ Here is how the updated application behaves on some specific cases:
 }
 
 () => {
-  tree.set('logged', false).commit();
+  tree.set('logged', false);
+  tree.commit();
 
   setTimeout(() => {
     window.location.hash = '/project/123456/settings';
@@ -305,7 +300,8 @@ Here is how the updated application behaves on some specific cases:
 }
 
 () => {
-  tree.set('logged', true).commit();
+  tree.set('logged', true);
+  tree.commit();
 
   setTimeout(() => {
     window.location.hash = '/project/123456/settings';
