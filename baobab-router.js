@@ -64,7 +64,7 @@ function __compareArrays(a1, a2) {
 function __resolveURL(url, dyn = {}, qry = {}) {
   const hash = url
     .split('/')
-    .map(s => (s in dyn) ? escape(dyn[s]) : s)
+    .map(s => dyn.hasOwnProperty(s) ? escape(dyn[s]) : s)
     .join('/');
   const query = Object.keys(qry)
     .filter(k => qry[k] !== null && qry[k] !== undefined)
@@ -519,10 +519,11 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   function _checkHash(baseHash, basePath, baseRoute) {
     const route = baseRoute || _routesTree;
     const match = __doesHashMatch(route.fullPath, baseHash);
+    const hash = baseHash.replace(/\?.*$/, '').split('/');
+    const query = baseHash.replace(/^[^\?]*\??/, '');
 
     let doCommit;
     let doForceCommit;
-    let hash = baseHash;
     let path = basePath || '';
 
     if (!match) {
@@ -532,17 +533,16 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     // Check if a child does match (without using default values):
     if (
       route.routes &&
-      route.routes.some(child => _checkHash(hash, route.fullPath, child))
+      route.routes.some(child => _checkHash(baseHash, route.fullPath, child))
     ) {
       return true;
     }
 
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
-      hash = (hash || '').split('/');
       path = route.fullDefaultPath
         .split('/')
-        .map((str, i) => str.match(_solver) ? hash[i] || str : str)
+        .map((str, i) => str.match(_solver) ? unescape(hash[i]) || str : str)
         .join('/');
 
       // The following line is no more linted, because of some circular deps on
@@ -553,15 +553,14 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
-      const queryValues = hash
-        .replace(/^[^\?]*\??/, '')
+      const queryValues = query
         .split('&')
         .reduce((res, str) => {
           const arr = str.split('=');
-          const query = (route.query || {})[arr[0]] || {};
+          const queryObj = (route.query || {})[unescape(arr[0])] || {};
           let value = unescape(arr[1]);
 
-          switch (query.cast) {
+          switch (queryObj.cast) {
             case 'number':
               value = +value;
               break;
@@ -581,7 +580,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
               // Nothing actually...
           }
 
-          res[query.match] = value;
+          res[queryObj.match] = value;
           return res;
         }, {});
 
@@ -593,7 +592,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         };
 
         if (obj.dynamic) {
-          update.value = hash.split('/')[
+          update.value = hash[
             route.fullPath.split('/').indexOf(update.value)
           ] || queryValues[update.value];
         }

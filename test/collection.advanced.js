@@ -85,9 +85,20 @@ const routes = {
             },
             {
               path: '/dashboard/:did',
+              query: {
+                q: { match: ':query', cast: 'json' },
+                f: { match: ':from', cast: 'number' },
+                sz: { match: ':size', cast: 'number' },
+                st: ':sort',
+              },
               state: {
                 view: 'project.dashboard',
-                did: ':did',
+                data: {
+                  did: ':did',
+                },
+                settings: {
+                  query: ':query',
+                },
               },
             },
           ],
@@ -268,6 +279,29 @@ describe('Ascending communication', () => {
 
     setTimeout(done, 0);
   });
+
+  it('should work with routes with queries following a dynamic', done => {
+    tree.set('logged', true);
+    tree.set('view', 'project.dashboard');
+    tree.set(['data', 'pid'], '123456');
+    tree.set(['data', 'did'], '123456');
+    tree.set('settings', {
+      query: { search: 'toto' },
+    });
+    tree.commit();
+
+    assert.equal(
+      window.location.hash,
+      '#/project/123456/dashboard/123456?q=%7B%22search%22%3A%22toto%22%7D'
+    );
+    assert.equal(tree.get('view'), 'project.dashboard');
+    assert.equal(tree.get('data', 'pid'), '123456');
+    assert.deepEqual(tree.get('settings'), {
+      query: { search: 'toto' },
+    });
+
+    setTimeout(done, 0);
+  });
 });
 
 describe('Descending communication', () => {
@@ -414,6 +448,23 @@ describe('Descending communication', () => {
         size: null,
         sort: null,
         query: null,
+      });
+      done();
+    }, 0);
+  });
+
+  it('should work fine with JSON query parameters', done => {
+    window.location.hash = '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D';
+
+    setTimeout(() => {
+      assert.equal(window.location.hash, '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D');
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        from: null,
+        size: null,
+        sort: null,
+        query: { search: 'toto' },
       });
       done();
     }, 0);

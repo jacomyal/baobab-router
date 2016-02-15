@@ -213,6 +213,15 @@ describe('BaobabRouter.__resolveURL', () => {
       ),
       'a/b?c=%3FC%3DC%26&d=D'
     );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        'a/:b',
+        { ':b': 'B?B' },
+        { c: '?C=C&', d: 'D' }
+      ),
+      'a/B%3FB?c=%3FC%3DC%26&d=D'
+    );
   });
 
   it('should work with edge cases', () => {
