@@ -70,7 +70,7 @@ function __resolveURL(url) {
   var qry = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
   var hash = url.split('/').map(function (s) {
-    return s in dyn ? escape(dyn[s]) : s;
+    return dyn.hasOwnProperty(s) ? escape(dyn[s]) : s;
   }).join('/');
   var query = Object.keys(qry).filter(function (k) {
     return qry[k] !== null && qry[k] !== undefined;
@@ -481,10 +481,11 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   function _checkHash(baseHash, basePath, baseRoute) {
     var route = baseRoute || _routesTree;
     var match = __doesHashMatch(route.fullPath, baseHash);
+    var hash = baseHash.replace(/\?.*$/, '').split('/');
+    var query = baseHash.replace(/^[^\?]*\??/, '');
 
     var doCommit = undefined;
     var doForceCommit = undefined;
-    var hash = baseHash;
     var path = basePath || '';
 
     if (!match) {
@@ -493,16 +494,15 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // Check if a child does match (without using default values):
     if (route.routes && route.routes.some(function (child) {
-      return _checkHash(hash, route.fullPath, child);
+      return _checkHash(baseHash, route.fullPath, child);
     })) {
       return true;
     }
 
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
-      hash = (hash || '').split('/');
       path = route.fullDefaultPath.split('/').map(function (str, i) {
-        return str.match(_solver) ? hash[i] || str : str;
+        return str.match(_solver) ? unescape(hash[i]) || str : str;
       }).join('/');
 
       // The following line is no more linted, because of some circular deps on
@@ -514,12 +514,12 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
       var _ret = function () {
-        var queryValues = hash.replace(/^[^\?]*\??/, '').split('&').reduce(function (res, str) {
+        var queryValues = query.split('&').reduce(function (res, str) {
           var arr = str.split('=');
-          var query = (route.query || {})[arr[0]] || {};
+          var queryObj = (route.query || {})[unescape(arr[0])] || {};
           var value = unescape(arr[1]);
 
-          switch (query.cast) {
+          switch (queryObj.cast) {
             case 'number':
               value = +value;
               break;
@@ -537,7 +537,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
             // Nothing actually...
           }
 
-          res[query.match] = value;
+          res[queryObj.match] = value;
           return res;
         }, {});
 
@@ -549,7 +549,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           };
 
           if (obj.dynamic) {
-            update.value = hash.split('/')[route.fullPath.split('/').indexOf(update.value)] || queryValues[update.value];
+            update.value = hash[route.fullPath.split('/').indexOf(update.value)] || queryValues[update.value];
           }
 
           if (_routesTree.readOnly.every(function (str) {
@@ -760,7 +760,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.2.0';
+BaobabRouter.version = '2.2.1';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
