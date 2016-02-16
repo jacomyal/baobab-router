@@ -356,14 +356,16 @@ function __extractPaths(state) {
  *
  * @param  {object}  route     The input route object.
  * @param  {regexp}  solver    The solver to use.
- * @param  {?object} baseState The optional base state, ie the recursively
- *                             merged state of the route's parents.
+ * @param  {?object} baseTree  The optional base state, ie the recursively
+ *                             merged state of the route's ancestors.
+ * @param  {?object} baseQuery The optional base query, ie the recursively
+ *                             merged query of the route's ancestors.
  * @param  {?string} basePath  The optional base path, ie the recursively
- *                             concatenated path of the route's parents.
+ *                             concatenated path of the route's ancestors.
  * @return {route}             The well-formed route object.
  */
-function __makeRoutes(route, solver, baseTree) {
-  var basePath = arguments.length <= 3 || arguments[3] === undefined ? '' : arguments[3];
+function __makeRoutes(route, solver, baseTree, baseQuery) {
+  var basePath = arguments.length <= 4 || arguments[4] === undefined ? '' : arguments[4];
 
   var _deepMerge = __deepMerge(baseTree || {}, route.state ? { state: route.state } : {});
 
@@ -376,20 +378,21 @@ function __makeRoutes(route, solver, baseTree) {
   route.overrides = conflicts;
   route.dynamics = route.fullPath.match(solver) || [];
 
-  route.queryValues = [];
-  for (var k in route.query || {}) {
-    if (route.query.hasOwnProperty(k)) {
-      if (typeof route.query[k] === 'string') {
-        route.query[k] = {
-          match: route.query[k]
+  route.fullQuery = __deepMerge(baseQuery || {}, route.query || {}).value;
+  route.fullQueryValues = [];
+  for (var k in route.fullQuery || {}) {
+    if (route.fullQuery.hasOwnProperty(k)) {
+      if (typeof route.fullQuery[k] === 'string') {
+        route.fullQuery[k] = {
+          match: route.fullQuery[k]
         };
       }
 
-      route.queryValues.push(route.query[k].match);
+      route.fullQueryValues.push(route.fullQuery[k].match);
     }
   }
 
-  route.updates = __extractPaths(route.fullTree, route.dynamics.concat(route.queryValues));
+  route.updates = __extractPaths(route.fullTree, route.dynamics.concat(route.fullQueryValues));
 
   if (route.defaultRoute) {
     route.fullDefaultPath = __concatenatePaths(route.fullPath, route.defaultRoute);
@@ -397,7 +400,7 @@ function __makeRoutes(route, solver, baseTree) {
 
   if (route.routes) {
     route.routes = route.routes.map(function (child) {
-      return __makeRoutes(child, solver, route.fullTree, route.fullPath);
+      return __makeRoutes(child, solver, route.fullTree, route.fullQuery, route.fullPath);
     });
   }
 
@@ -516,7 +519,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
       var _ret = function () {
         var queryValues = query.split('&').reduce(function (res, str) {
           var arr = str.split('=');
-          var queryObj = (route.query || {})[unescape(arr[0])] || {};
+          var queryObj = (route.fullQuery || {})[unescape(arr[0])] || {};
           var value = unescape(arr[1]);
 
           switch (queryObj.cast) {
@@ -611,7 +614,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     var route = baseRoute || _routesTree;
 
     // Check if route match:
-    var match = baseTree ? __doesStateMatch(tree, route.fullTree, route.dynamics, route.queryValues) : __doesStateMatch(route.fullTree, tree, route.dynamics, route.queryValues);
+    var match = baseTree ? __doesStateMatch(tree, route.fullTree, route.dynamics, route.fullQueryValues) : __doesStateMatch(route.fullTree, tree, route.dynamics, route.fullQueryValues);
 
     if (!match && arguments.length > 0 && !route.overrides) {
       return false;
@@ -662,9 +665,9 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     if (match) {
       var query = {};
 
-      for (var k in route.query) {
-        if (route.query.hasOwnProperty(k)) {
-          query[k] = match[route.query[k].match];
+      for (var k in route.fullQuery) {
+        if (route.fullQuery.hasOwnProperty(k)) {
+          query[k] = match[route.fullQuery[k].match];
         }
       }
 
@@ -760,7 +763,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.2.1';
+BaobabRouter.version = '2.2.2';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
