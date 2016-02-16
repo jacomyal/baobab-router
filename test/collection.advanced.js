@@ -21,6 +21,7 @@ const loggedState = {
     user: { name: 'John' },
   },
   settings: {
+    edit: false,
     from: null,
     size: null,
     sort: null,
@@ -59,6 +60,7 @@ const routes = {
           state: {
             view: 'project',
             data: { pid: ':pid' },
+            settings: { edit: false },
           },
           routes: [
             {
@@ -100,6 +102,14 @@ const routes = {
                   query: ':query',
                 },
               },
+              routes: [
+                {
+                  path: '/edit',
+                  state: {
+                    settings: { edit: true },
+                  },
+                },
+              ],
             },
           ],
         },
@@ -232,6 +242,7 @@ describe('Ascending communication', () => {
     tree.set('view', 'project.data');
     tree.set(['data', 'pid'], '123456');
     tree.set('settings', {
+      edit: false,
       from: null,
       size: null,
       sort: null,
@@ -243,6 +254,7 @@ describe('Ascending communication', () => {
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
+      edit: false,
       from: null,
       size: null,
       sort: null,
@@ -257,6 +269,7 @@ describe('Ascending communication', () => {
     tree.set('view', 'project.data');
     tree.set(['data', 'pid'], '123456');
     tree.set('settings', {
+      edit: false,
       from: 0,
       size: 1000,
       sort: null,
@@ -271,6 +284,7 @@ describe('Ascending communication', () => {
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
+      edit: false,
       from: 0,
       size: 1000,
       sort: null,
@@ -286,6 +300,7 @@ describe('Ascending communication', () => {
     tree.set(['data', 'pid'], '123456');
     tree.set(['data', 'did'], '123456');
     tree.set('settings', {
+      edit: false,
       query: { search: 'toto' },
     });
     tree.commit();
@@ -297,6 +312,32 @@ describe('Ascending communication', () => {
     assert.equal(tree.get('view'), 'project.dashboard');
     assert.equal(tree.get('data', 'pid'), '123456');
     assert.deepEqual(tree.get('settings'), {
+      edit: false,
+      query: { search: 'toto' },
+    });
+
+    setTimeout(done, 0);
+  });
+
+  it('should work with routes inheritating queries from a parent', done => {
+    tree.set('logged', true);
+    tree.set('view', 'project.dashboard');
+    tree.set(['data', 'pid'], '123456');
+    tree.set(['data', 'did'], '123456');
+    tree.set('settings', {
+      edit: true,
+      query: { search: 'toto' },
+    });
+    tree.commit();
+
+    assert.equal(
+      window.location.hash,
+      '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D'
+    );
+    assert.equal(tree.get('view'), 'project.dashboard');
+    assert.equal(tree.get('data', 'pid'), '123456');
+    assert.deepEqual(tree.get('settings'), {
+      edit: true,
       query: { search: 'toto' },
     });
 
@@ -427,6 +468,7 @@ describe('Descending communication', () => {
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
+        edit: false,
         from: null,
         size: null,
         sort: 'abc',
@@ -444,6 +486,7 @@ describe('Descending communication', () => {
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
+        edit: false,
         from: null,
         size: null,
         sort: null,
@@ -461,6 +504,7 @@ describe('Descending communication', () => {
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
+        edit: false,
         from: null,
         size: null,
         sort: null,
@@ -478,11 +522,35 @@ describe('Descending communication', () => {
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
+        edit: false,
         from: null,
         size: null,
         sort: 'abc',
         query: null,
       });
+      done();
+    }, 0);
+  });
+
+  it('should work with routes inheritating queries from a parent', done => {
+    window.location.hash =
+      '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D';
+
+    setTimeout(() => {
+      assert.equal(
+        window.location.hash,
+        '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D'
+      );
+      assert.equal(tree.get('view'), 'project.dashboard');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        edit: true,
+        from: null,
+        size: null,
+        sort: null,
+        query: { search: 'toto' },
+      });
+
       done();
     }, 0);
   });

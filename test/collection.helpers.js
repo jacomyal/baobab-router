@@ -286,7 +286,7 @@ describe('BaobabRouter.__makeRoutes', () => {
           path: '/route_A2',
           state: { state_a2: 'A2, a2' },
           routes: [
-            // Route with query:
+            // Route with query and a child:
             {
               path: '/route_B1',
               query: {
@@ -298,6 +298,14 @@ describe('BaobabRouter.__makeRoutes', () => {
                 state_a3: ':query1',
                 state_a4: ':query2',
               },
+              routes: [
+                {
+                  path: '/route_C1',
+                  state: {
+                    state_a5: 'C1, a5',
+                  },
+                },
+              ],
             },
 
             // Route with dynamics:
@@ -324,7 +332,8 @@ describe('BaobabRouter.__makeRoutes', () => {
       // ADDED:
       updates: [],
       dynamics: [],
-      queryValues: [],
+      fullQueryValues: [],
+      fullQuery: {},
       fullTree: {},
       overrides: false,
       fullPath: '',
@@ -339,7 +348,8 @@ describe('BaobabRouter.__makeRoutes', () => {
 
           // ADDED:
           dynamics: [],
-          queryValues: [],
+          fullQueryValues: [],
+          fullQuery: {},
           fullPath: '/route_A1',
           overrides: false,
           fullTree: {
@@ -368,7 +378,8 @@ describe('BaobabRouter.__makeRoutes', () => {
 
           // ADDED:
           dynamics: [],
-          queryValues: [],
+          fullQueryValues: [],
+          fullQuery: {},
           fullPath: '/route_A2',
           overrides: false,
           fullTree: { state: { state_a2: 'A2, a2' } },
@@ -384,7 +395,7 @@ describe('BaobabRouter.__makeRoutes', () => {
             {
               path: '/route_B1',
               query: {
-                q1: { match: ':query1' },
+                q1: ':query1',
                 q2: { match: ':query2', cast: 'number' },
               },
               state: {
@@ -395,8 +406,12 @@ describe('BaobabRouter.__makeRoutes', () => {
 
               // ADDED:
               dynamics: [],
-              queryValues: [':query1', ':query2'],
+              fullQueryValues: [':query1', ':query2'],
               fullPath: '/route_A2/route_B1',
+              fullQuery: {
+                q1: { match: ':query1' },
+                q2: { match: ':query2', cast: 'number' },
+              },
               overrides: false,
               fullTree: {
                 state: {
@@ -428,6 +443,61 @@ describe('BaobabRouter.__makeRoutes', () => {
                   value: ':query2',
                 },
               ],
+
+              routes: [
+                {
+                  path: '/route_C1',
+                  state: {
+                    state_a5: 'C1, a5',
+                  },
+
+                  // ADDED:
+                  dynamics: [],
+                  fullQueryValues: [':query1', ':query2'],
+                  fullQuery: {
+                    q1: { match: ':query1' },
+                    q2: { match: ':query2', cast: 'number' },
+                  },
+                  fullPath: '/route_A2/route_B1/route_C1',
+                  overrides: false,
+                  fullTree: {
+                    state: {
+                      state_a1: { state_b1: 'A2.B1, a1.b1' },
+                      state_a2: 'A2, a2',
+                      state_a3: ':query1',
+                      state_a4: ':query2',
+                      state_a5: 'C1, a5',
+                    },
+                  },
+                  updates: [
+                    {
+                      dynamic: false,
+                      path: ['state', 'state_a2'],
+                      value: 'A2, a2',
+                    },
+                    {
+                      dynamic: false,
+                      path: ['state', 'state_a1', 'state_b1'],
+                      value: 'A2.B1, a1.b1',
+                    },
+                    {
+                      dynamic: true,
+                      path: ['state', 'state_a3'],
+                      value: ':query1',
+                    },
+                    {
+                      dynamic: true,
+                      path: ['state', 'state_a4'],
+                      value: ':query2',
+                    },
+                    {
+                      dynamic: false,
+                      path: ['state', 'state_a5'],
+                      value: 'C1, a5',
+                    },
+                  ],
+                },
+              ],
             },
             {
               path: '/:route_dyn_B2',
@@ -437,7 +507,8 @@ describe('BaobabRouter.__makeRoutes', () => {
               overrides: false,
               fullPath: '/route_A2/:route_dyn_B2',
               dynamics: [':route_dyn_B2'],
-              queryValues: [],
+              fullQueryValues: [],
+              fullQuery: {},
               fullTree: {
                 state: {
                   state_a1: { state_b1: ':route_dyn_B2' },
@@ -465,7 +536,8 @@ describe('BaobabRouter.__makeRoutes', () => {
                   overrides: false,
                   fullPath: '/route_A2/:route_dyn_B2/route_dyn_C1',
                   dynamics: [':route_dyn_B2'],
-                  queryValues: [],
+                  fullQueryValues: [],
+                  fullQuery: {},
                   fullTree: {
                     state: {
                       state_a1: { state_b1: ':route_dyn_B2' },
