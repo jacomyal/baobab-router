@@ -3,6 +3,13 @@
  * PRIVATE STATIC METHODS:
  * ***********************
  */
+import isEqual from 'lodash.isequal';
+
+/**
+ * ***********************
+ * PRIVATE STATIC METHODS:
+ * ***********************
+ */
 const __defaultSolver = /:([^\/:]*)/g;
 
 /**
@@ -608,7 +615,9 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           ) &&
           update.path.length > 1
         ) {
-          if (_tree.get(update.path.slice(1)) !== update.value) {
+          if (
+            !isEqual(_tree.get(update.path.slice(1)), update.value)
+          ) {
             _tree.set(update.path.slice(1), update.value);
             doCommit = true;
           } else {

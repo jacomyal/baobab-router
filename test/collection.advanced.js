@@ -343,6 +343,40 @@ describe('Ascending communication', () => {
 
     setTimeout(done, 0);
   });
+
+  it('should compare JSON query objects before setting them', done => {
+    let updated = false;
+
+    tree.set('logged', true);
+    tree.set('view', 'project.data');
+    tree.set(['data', 'pid'], '123456');
+    tree.set('settings', {
+      edit: false,
+      from: 0,
+      size: 1000,
+      sort: null,
+      query: { search: 'toto' },
+    });
+    tree.commit();
+
+    tree.select(
+      ['settings', 'query']
+    ).on(
+      'update',
+      () => { updated = true; }
+    );
+
+    window.location.hash =
+      '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&f=0&sz=1100';
+
+    setTimeout(
+      () => {
+        assert.equal(updated, false);
+        setTimeout(done, 0);
+      },
+      0
+    );
+  });
 });
 
 describe('Descending communication', () => {

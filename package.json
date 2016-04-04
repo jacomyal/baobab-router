@@ -55,5 +55,8 @@
       "afterEach": true,
       "beforeEach": true
     }
+  },
+  "dependencies": {
+    "lodash.isequal": "^4.1.3"
   }
 }
