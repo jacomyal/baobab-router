@@ -4,7 +4,18 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; /**
+                                                                                                                                                                                                                                                   * ***********************
+                                                                                                                                                                                                                                                   * PRIVATE STATIC METHODS:
+                                                                                                                                                                                                                                                   * ***********************
+                                                                                                                                                                                                                                                   */
+
+
+var _lodash = require('lodash.isequal');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * ***********************
@@ -558,7 +569,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           if (_routesTree.readOnly.every(function (str) {
             return !__compareArrays(update.path, str);
           }) && update.path.length > 1) {
-            if (_tree.get(update.path.slice(1)) !== update.value) {
+            if (!(0, _lodash2.default)(_tree.get(update.path.slice(1)), update.value)) {
               _tree.set(update.path.slice(1), update.value);
               doCommit = true;
             } else {
@@ -763,7 +774,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.2.2';
+BaobabRouter.version = '2.2.3';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
