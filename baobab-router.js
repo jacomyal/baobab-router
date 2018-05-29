@@ -877,7 +877,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.2.3';
+BaobabRouter.version = '2.3.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;

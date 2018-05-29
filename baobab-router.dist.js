@@ -4,11 +4,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; /**
-                                                                                                                                                                                                                                                   * ***********************
-                                                                                                                                                                                                                                                   * PRIVATE STATIC METHODS:
-                                                                                                                                                                                                                                                   * ***********************
-                                                                                                                                                                                                                                                   */
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; /**
+                                                                                                                                                                                                                                                                               * ***********************
+                                                                                                                                                                                                                                                                               * PRIVATE STATIC METHODS:
+                                                                                                                                                                                                                                                                               * ***********************
+                                                                                                                                                                                                                                                                               */
 
 
 var _lodash = require('lodash.isequal');
@@ -77,8 +77,8 @@ function __compareArrays(a1, a2) {
  * @return {string}      The resolved URL.
  */
 function __resolveURL(url) {
-  var dyn = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-  var qry = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+  var dyn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var qry = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
   var hash = url.split('/').map(function (s) {
     return dyn.hasOwnProperty(s) ? escape(dyn[s]) : s;
@@ -86,7 +86,7 @@ function __resolveURL(url) {
   var query = Object.keys(qry).filter(function (k) {
     return qry[k] !== null && qry[k] !== undefined;
   }).map(function (k) {
-    return escape(k) + '=' + escape(_typeof(qry[k]) === 'object' && qry[k] ? JSON.stringify(qry[k]) : '' + qry[k]);
+    return escape(k) + '=' + escape(qry[k]);
   }).join('&');
 
   return query ? hash + '?' + query : hash;
@@ -155,8 +155,8 @@ function __concatenatePaths() {
  *                           arguments, under the key "conflicts".
  */
 function __deepMerge() {
-  var res = undefined;
-  var merged = undefined;
+  var res = void 0;
+  var merged = void 0;
   var conflicts = false;
 
   for (var i = 0, l = arguments.length; i < l; i++) {
@@ -277,41 +277,41 @@ function __doesStateMatch(routeState, state, dynamics, query) {
 
     // Objects:
   } else if (routeState && (typeof routeState === 'undefined' ? 'undefined' : _typeof(routeState)) === 'object') {
-      if (!state || (typeof state === 'undefined' ? 'undefined' : _typeof(state)) !== 'object') {
-        return null;
-      }
+    if (!state || (typeof state === 'undefined' ? 'undefined' : _typeof(state)) !== 'object') {
+      return null;
+    }
 
-      for (var k in routeState) {
-        if (routeState.hasOwnProperty(k)) {
-          var localResults = __doesStateMatch(routeState[k], state[k], dynamics, query);
-          if (localResults) {
-            results = __deepMerge(results, localResults).value;
-          } else {
-            return null;
-          }
+    for (var k in routeState) {
+      if (routeState.hasOwnProperty(k)) {
+        var localResults = __doesStateMatch(routeState[k], state[k], dynamics, query);
+        if (localResults) {
+          results = __deepMerge(results, localResults).value;
+        } else {
+          return null;
         }
       }
+    }
 
-      return results;
+    return results;
 
-      // Dynamics:
-    } else if (~(dynamics || []).indexOf(routeState) && state) {
-        results[routeState] = state;
-        return results;
+    // Dynamics:
+  } else if (~(dynamics || []).indexOf(routeState) && state) {
+    results[routeState] = state;
+    return results;
 
-        // Query:
-      } else if (~(query || []).indexOf(routeState) && ! ~(dynamics || []).indexOf(routeState)) {
-          results[routeState] = state;
-          return results;
+    // Query:
+  } else if (~(query || []).indexOf(routeState) && !~(dynamics || []).indexOf(routeState)) {
+    results[routeState] = state;
+    return results;
 
-          // Null / undefined cases:
-        } else if ((routeState === undefined || routeState === null) && (state === undefined || state === null)) {
-            return results;
+    // Null / undefined cases:
+  } else if ((routeState === undefined || routeState === null) && (state === undefined || state === null)) {
+    return results;
 
-            // Other scalars:
-          } else if (routeState === state) {
-              return results;
-            }
+    // Other scalars:
+  } else if (routeState === state) {
+    return results;
+  }
 
   return null;
 }
@@ -334,9 +334,9 @@ function __doesStateMatch(routeState, state, dynamics, query) {
  *                           are related to a dynamic value or not.
  */
 function __extractPaths(state) {
-  var dynamics = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
-  var results = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-  var path = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
+  var dynamics = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  var results = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+  var path = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
 
   for (var i in state) {
     if (state.hasOwnProperty(i) && state[i] && _typeof(state[i]) === 'object' && Object.keys(state[i]).length) {
@@ -345,7 +345,7 @@ function __extractPaths(state) {
       results.push({
         path: path.concat(i),
         value: state[i],
-        dynamic: !! ~dynamics.indexOf(state[i])
+        dynamic: !!~dynamics.indexOf(state[i])
       });
     }
   }
@@ -376,13 +376,11 @@ function __extractPaths(state) {
  * @return {route}             The well-formed route object.
  */
 function __makeRoutes(route, solver, baseTree, baseQuery) {
-  var basePath = arguments.length <= 4 || arguments[4] === undefined ? '' : arguments[4];
+  var basePath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
 
-  var _deepMerge = __deepMerge(baseTree || {}, route.state ? { state: route.state } : {});
-
-  var value = _deepMerge.value;
-  var conflicts = _deepMerge.conflicts;
-
+  var _deepMerge = __deepMerge(baseTree || {}, route.state ? { state: route.state } : {}),
+      value = _deepMerge.value,
+      conflicts = _deepMerge.conflicts;
 
   route.fullPath = __concatenatePaths(basePath, route.path);
   route.fullTree = value;
@@ -475,10 +473,10 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   var _solver = _settings.solver || __defaultSolver;
   var _routesTree = __makeRoutes(__deepMerge(routes).value, _solver);
 
-  var _watcher = undefined;
-  var _hashInterval = undefined;
-  var _hashListener = undefined;
-  var _watcherListener = undefined;
+  var _watcher = void 0;
+  var _hashInterval = void 0;
+  var _hashListener = void 0;
+  var _watcherListener = void 0;
   var _stored = window.location.hash.replace(/^#/, '');
 
   /* ****************
@@ -498,8 +496,8 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     var hash = baseHash.replace(/\?.*$/, '').split('/');
     var query = baseHash.replace(/^[^\?]*\??/, '');
 
-    var doCommit = undefined;
-    var doForceCommit = undefined;
+    var doCommit = void 0;
+    var doForceCommit = void 0;
     var path = basePath || '';
 
     if (!match) {
@@ -527,70 +525,74 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
-      var _ret = function () {
-        var queryValues = query.split('&').reduce(function (res, str) {
-          var arr = str.split('=');
-          var queryObj = (route.fullQuery || {})[unescape(arr[0])] || {};
-          var value = unescape(arr[1]);
+      var queryValues = query.split('&').reduce(function (res, str) {
+        var arr = str.split('=');
+        var queryObj = (route.fullQuery || {})[unescape(arr[0])] || {};
+        var value = unescape(arr[1]);
 
-          switch (queryObj.cast) {
-            case 'number':
-              value = +value;
-              break;
-            case 'boolean':
-              value = value === 'true' ? true : false;
-              break;
-            case 'json':
-              try {
-                value = value ? JSON.parse(value) : null;
-              } catch (e) {
-                value = null;
-              }
-              break;
-            default:
-            // Nothing actually...
-          }
-
-          res[queryObj.match] = value;
-          return res;
-        }, {});
-
-        // Apply updates:
-        route.updates.map(function (obj) {
-          var update = {
-            path: obj.path,
-            value: obj.value
-          };
-
-          if (obj.dynamic) {
-            update.value = hash[route.fullPath.split('/').indexOf(update.value)] || queryValues[update.value];
-          }
-
-          if (_routesTree.readOnly.every(function (str) {
-            return !__compareArrays(update.path, str);
-          }) && update.path.length > 1) {
-            if (!(0, _lodash2.default)(_tree.get(update.path.slice(1)), update.value)) {
-              _tree.set(update.path.slice(1), update.value);
-              doCommit = true;
-            } else {
-              doForceCommit = true;
+        switch (queryObj.cast) {
+          case 'number':
+            value = +value;
+            break;
+          case 'boolean':
+            value = value === 'true' ? true : false;
+            break;
+          case 'base64':
+            try {
+              value = value ? JSON.parse(atob(value)) : null;
+            } catch (e) {
+              value = null;
             }
-          }
-        });
-
-        // Commit only if something has actually been updated:
-        if (doCommit) {
-          _tree.commit();
-        } else if (doForceCommit) {
-          _checkState(); //eslint-disable-line
+            break;
+          case 'json':
+            try {
+              value = value ? JSON.parse(value) : null;
+            } catch (e) {
+              value = null;
+            }
+            break;
+          default:
+          // Nothing actually...
         }
 
-        return {
-          v: true
-        };
-      }();
+        if (queryObj.match) {
+          res[queryObj.match] = value;
+        }
 
-      if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        return res;
+      }, {});
+
+      // Apply updates:
+      route.updates.map(function (obj) {
+        var update = {
+          path: obj.path,
+          value: obj.value
+        };
+
+        if (obj.dynamic) {
+          update.value = hash[route.fullPath.split('/').indexOf(update.value)] || queryValues[update.value];
+        }
+
+        if (_routesTree.readOnly.every(function (str) {
+          return !__compareArrays(update.path, str);
+        }) && update.path.length > 1) {
+          if (!(0, _lodash2.default)(_tree.get(update.path.slice(1)), update.value)) {
+            _tree.set(update.path.slice(1), update.value);
+            doCommit = true;
+          } else {
+            doForceCommit = true;
+          }
+        }
+      });
+
+      // Commit only if something has actually been updated:
+      if (doCommit) {
+        _tree.commit();
+      } else if (doForceCommit) {
+        _checkState(); //eslint-disable-line
+      }
+
+      return true;
     }
   }
 
@@ -601,7 +603,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
    * @param  {string} hash The new hash.
    */
   function _updateHash(hash) {
-    var force = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+    var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
     if (_stored !== hash || force) {
       window.location.hash = hash;
@@ -641,36 +643,30 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     // If the root route did not find any match, let's compare the tree with
     // only the read-only restrictions:
     if (!arguments.length) {
-      var _ret2 = function () {
-        _stored = null;
+      _stored = null;
 
-        var restrictedTree = __extractPaths(tree).filter(function (obj) {
-          return _routesTree.readOnly.some(function (path) {
-            return __compareArrays(obj.path, path);
-          });
-        }).reduce(function (res, obj) {
-          obj.path.reduce(function (localTree, string, i) {
-            if (i === obj.path.length - 1) {
-              localTree[string] = obj.value;
-            } else {
-              localTree[string] = localTree[string] || (typeof obj.path[i + 1] === 'number' ? [] : {});
-            }
+      var restrictedTree = __extractPaths(tree).filter(function (obj) {
+        return _routesTree.readOnly.some(function (path) {
+          return __compareArrays(obj.path, path);
+        });
+      }).reduce(function (res, obj) {
+        obj.path.reduce(function (localTree, string, i) {
+          if (i === obj.path.length - 1) {
+            localTree[string] = obj.value;
+          } else {
+            localTree[string] = localTree[string] || (typeof obj.path[i + 1] === 'number' ? [] : {});
+          }
 
-            return localTree[string];
-          }, res);
-          return res;
-        }, {});
+          return localTree[string];
+        }, res);
+        return res;
+      }, {});
 
-        if (route.routes.some(function (child) {
-          return _checkState(route.fullPath, child, restrictedTree);
-        })) {
-          return {
-            v: true
-          };
-        }
-      }();
-
-      if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+      if (route.routes.some(function (child) {
+        return _checkState(route.fullPath, child, restrictedTree);
+      })) {
+        return true;
+      }
     }
 
     if (match) {
@@ -678,7 +674,27 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
       for (var k in route.fullQuery) {
         if (route.fullQuery.hasOwnProperty(k)) {
-          query[k] = match[route.fullQuery[k].match];
+          var queryObj = route.fullQuery[k];
+          var value = match[route.fullQuery[k].match];
+
+          switch (queryObj.cast) {
+            case 'json':
+              if (value) {
+                value = JSON.stringify(value);
+              }
+              break;
+            case 'base64':
+              if (value) {
+                value = btoa(JSON.stringify(value));
+              }
+              break;
+            default:
+            // Nothing actually...
+          }
+
+          if (value !== undefined && value !== null) {
+            query[k] = value;
+          }
         }
       }
 
@@ -774,7 +790,7 @@ var BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.2.3';
+BaobabRouter.version = '2.3.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
