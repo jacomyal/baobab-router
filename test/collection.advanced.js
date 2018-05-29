@@ -73,6 +73,7 @@ const routes = {
                 q: { match: ':query', cast: 'json' },
                 f: { match: ':from', cast: 'number' },
                 sz: { match: ':size', cast: 'number' },
+                q64: { match: ':query', cast: 'base64' },
                 st: ':sort',
               },
               state: {
@@ -91,6 +92,7 @@ const routes = {
                 q: { match: ':query', cast: 'json' },
                 f: { match: ':from', cast: 'number' },
                 sz: { match: ':size', cast: 'number' },
+                q64: { match: ':query', cast: 'base64' },
                 st: ':sort',
               },
               state: {
@@ -279,7 +281,13 @@ describe('Ascending communication', () => {
 
     assert.equal(
       window.location.hash,
-      '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&f=0&sz=1000'
+      [
+        '#/project/123456/data',
+        '?q=%7B%22search%22%3A%22toto%22%7D',
+        '&f=0',
+        '&sz=1000',
+        '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+      ].join('')
     );
     assert.equal(tree.get('view'), 'project.data');
     assert.equal(tree.get('data', 'pid'), '123456');
@@ -307,7 +315,11 @@ describe('Ascending communication', () => {
 
     assert.equal(
       window.location.hash,
-      '#/project/123456/dashboard/123456?q=%7B%22search%22%3A%22toto%22%7D'
+      [
+        '#/project/123456/dashboard/123456',
+        '?q=%7B%22search%22%3A%22toto%22%7D',
+        '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+      ].join('')
     );
     assert.equal(tree.get('view'), 'project.dashboard');
     assert.equal(tree.get('data', 'pid'), '123456');
@@ -332,7 +344,11 @@ describe('Ascending communication', () => {
 
     assert.equal(
       window.location.hash,
-      '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D'
+      [
+        '#/project/123456/dashboard/123456/edit',
+        '?q=%7B%22search%22%3A%22toto%22%7D',
+        '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+      ].join('')
     );
     assert.equal(tree.get('view'), 'project.dashboard');
     assert.equal(tree.get('data', 'pid'), '123456');
@@ -366,8 +382,13 @@ describe('Ascending communication', () => {
       () => { updated = true; }
     );
 
-    window.location.hash =
-      '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&f=0&sz=1100';
+    window.location.hash = [
+      '#/project/123456/data',
+      '?q=%7B%22search%22%3A%22toto%22%7D',
+      '&f=0',
+      '&sz=1100',
+      '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+    ].join('');
 
     setTimeout(
       () => {
@@ -531,10 +552,14 @@ describe('Descending communication', () => {
   });
 
   it('should work fine with JSON query parameters', done => {
-    window.location.hash = '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D';
+    window.location.hash =
+      '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D';
 
     setTimeout(() => {
-      assert.equal(window.location.hash, '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D');
+      assert.equal(
+        window.location.hash,
+        '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D'
+      );
       assert.equal(tree.get('view'), 'project.data');
       assert.equal(tree.get('data', 'pid'), '123456');
       assert.deepEqual(tree.get('settings'), {
@@ -566,14 +591,44 @@ describe('Descending communication', () => {
     }, 0);
   });
 
-  it('should work with routes inheritating queries from a parent', done => {
+  it('should use last value as truth when conflicts', done => {
+    // Here q represents {search: "tata"} and q64 {search: "toto"}:
     window.location.hash =
-      '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D';
+      '#/project/123456/data?q=%7B%22search%22%3A%22tata%22%7D&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D';
 
     setTimeout(() => {
       assert.equal(
         window.location.hash,
-        '#/project/123456/dashboard/123456/edit?q=%7B%22search%22%3A%22toto%22%7D'
+        '#/project/123456/data?q=%7B%22search%22%3A%22toto%22%7D&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D'
+      );
+      assert.equal(tree.get('view'), 'project.data');
+      assert.equal(tree.get('data', 'pid'), '123456');
+      assert.deepEqual(tree.get('settings'), {
+        edit: false,
+        from: null,
+        size: null,
+        sort: null,
+        query: { search: 'toto' },
+      });
+      done();
+    }, 0);
+  });
+
+  it('should work with routes inheritating queries from a parent', done => {
+    window.location.hash = [
+      '#/project/123456/dashboard/123456/edit',
+      '?q=%7B%22search%22%3A%22toto%22%7D',
+      '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+    ].join('');
+
+    setTimeout(() => {
+      assert.equal(
+        window.location.hash,
+        [
+          '#/project/123456/dashboard/123456/edit',
+          '?q=%7B%22search%22%3A%22toto%22%7D',
+          '&q64=eyJzZWFyY2giOiJ0b3RvIn0%3D',
+        ].join('')
       );
       assert.equal(tree.get('view'), 'project.dashboard');
       assert.equal(tree.get('data', 'pid'), '123456');

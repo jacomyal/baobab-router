@@ -75,11 +75,7 @@ function __resolveURL(url, dyn = {}, qry = {}) {
     .join('/');
   const query = Object.keys(qry)
     .filter(k => qry[k] !== null && qry[k] !== undefined)
-    .map(k => escape(k) + '=' + escape(
-      (typeof qry[k] === 'object' && qry[k]) ?
-        JSON.stringify(qry[k]) :
-        ('' + qry[k])
-    ))
+    .map(k => escape(k) + '=' + escape(qry[k]))
     .join('&');
 
   return (
@@ -579,6 +575,15 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
             case 'boolean':
               value = value === 'true' ? true : false;
               break;
+            case 'base64':
+              try {
+                value = value ?
+                  JSON.parse(atob(value)) :
+                  null;
+              } catch (e) {
+                value = null;
+              }
+              break;
             case 'json':
               try {
                 value = value ?
@@ -592,7 +597,10 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
               // Nothing actually...
           }
 
-          res[queryObj.match] = value;
+          if (queryObj.match) {
+            res[queryObj.match] = value;
+          }
+
           return res;
         }, {});
 
@@ -732,7 +740,27 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
       for (const k in route.fullQuery) {
         if (route.fullQuery.hasOwnProperty(k)) {
-          query[k] = match[route.fullQuery[k].match];
+          const queryObj = route.fullQuery[k];
+          let value = match[route.fullQuery[k].match];
+
+          switch (queryObj.cast) {
+            case 'json':
+              if (value) {
+                value = JSON.stringify(value);
+              }
+              break;
+            case 'base64':
+              if (value) {
+                value = btoa(JSON.stringify(value));
+              }
+              break;
+            default:
+              // Nothing actually...
+          }
+
+          if (value !== undefined && value !== null) {
+            query[k] = value;
+          }
         }
       }
 
