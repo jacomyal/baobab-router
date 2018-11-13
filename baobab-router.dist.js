@@ -234,6 +234,29 @@ function __doesHashMatch(routeHash, hash, solver) {
 }
 
 /**
+ * This function takes a route (that might have either a path or children),
+ * and an actual hash. It will then compare route's hash  to find if the hash
+ * does match.
+ *
+ * @param  {object}  route     The route.
+ * @param  {string}  hash      The current hash.
+ * @param  {?RegExp} solver    The dynamic values solver. If not specified, the
+ *                             default solver will be used instead.
+ * @return {boolean}           Returns true if the route does match the path,
+ *                             and false else.
+ */
+function __recursiveDoesHashMatch(route, hash, solver) {
+  // will test children even if route have a path, only if it does not match.
+  if (route.path && __doesHashMatch(route.path, hash, solver)) {
+    return true;
+  }
+
+  return (route.routes || []).some(function (child) {
+    return __recursiveDoesHashMatch(child, hash, solver);
+  });
+}
+
+/**
  * This function takes a route's state constraints (that might have some dynamic
  * values, such as ":tutu" or so), and the actual app state. It will then
  * compare them to find if the hash does match, and return an object with the
@@ -431,9 +454,7 @@ function __makeRoutes(route, solver, baseTree, baseQuery) {
   }
 
   // Check that default route is valid:
-  if (route.defaultRoute && !(route.routes || []).some(function (child) {
-    return __doesHashMatch(child.path, route.defaultRoute);
-  })) {
+  if (route.defaultRoute && !__recursiveDoesHashMatch(route, route.defaultRoute)) {
     throw new Error('BaobabRouter.__makeRoutes: ' + 'The default route "' + route.defaultRoute + '" does not match any ' + 'registered route.');
   }
 
@@ -794,6 +815,7 @@ BaobabRouter.version = '2.3.0';
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
+BaobabRouter.__recursiveDoesHashMatch = __recursiveDoesHashMatch;
 BaobabRouter.__doesStateMatch = __doesStateMatch;
 BaobabRouter.__extractPaths = __extractPaths;
 BaobabRouter.__makeRoutes = __makeRoutes;

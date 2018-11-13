@@ -47,6 +47,162 @@ describe('BaobabRouter.__doesHashMatch', () => {
   });
 });
 
+
+describe('BaobabRouter.__recursiveDoesHashMatch', () => {
+  it('should work with basic cases', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c' },
+      '/a/b/c'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b' },
+      '/a/b/c'
+    ), true);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c' },
+      '/a/c/b'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c/d' },
+      '/a/c/b'
+    ), false);
+  });
+
+  it('should work with dynamic attributes', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123/c'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/123/c'
+    ), true);
+
+    // Empty strings are not valid values for matching dynamic values:
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a//c'
+    ), false);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123/d'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123'
+    ), false);
+  });
+
+  it('should work with queries', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c' },
+      '/a/b/c?toto=tutu'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b' },
+      '/a/b/c?toto=tutu'
+    ), true);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c' },
+      '/a/c/b?toto=tutu'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/b/c/d' },
+      '/a/c/b?toto=tutu'
+    ), false);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123/c?toto=tutu'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/123/c?toto=tutu'
+    ), true);
+
+    // Empty strings are not valid values for matching dynamic values:
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/?toto=tutu'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a//c?toto=tutu'
+    ), false);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123/d?toto=tutu'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b/c' },
+      '/a/123?toto=tutu'
+    ), false);
+  });
+
+  it('should work with custom solvers', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/b/c', /:([^\/:]*)/g
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/{b}' },
+      '/a/b/c', /\{([^\/\}]*)\}/g
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { path: '/a/:b' },
+      '/a/b/c', /\{([^\/\}]*)\}/g
+    ), false);
+  });
+
+  it('should work with children', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ path: '/a/b/c' }] },
+      '/a/b/c'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ path: '/a/b' }] },
+      '/a/b/c'
+    ), true);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ path: '/a/b/c' }] },
+      '/a/c/b'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ path: '/a/b/c/d' }] },
+      '/a/c/b'
+    ), false);
+  });
+
+  it('should work with grand-children', () => {
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ routes: [{ path: '/a/b/c' }] }] },
+      '/a/b/c'
+    ), true);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ routes: [{ path: '/a/b' }] }] },
+      '/a/b/c'
+    ), true);
+
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ routes: [{ path: '/a/b/c' }] }] },
+      '/a/c/b'
+    ), false);
+    assert.equal(BaobabRouter.__recursiveDoesHashMatch(
+      { routes: [{ routes: [{ path: '/a/b/c/d' }] }] },
+      '/a/c/b'
+    ), false);
+  });
+});
+
 describe('BaobabRouter.__doesStateMatch', () => {
   it('should work with basic cases', () => {
     assert.deepEqual(BaobabRouter.__doesStateMatch(
