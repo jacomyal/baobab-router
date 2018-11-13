@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint baobab-router.js test/collection*.js",
     "build": "babel baobab-router.js -o baobab-router.dist.js --presets es2015 --plugins add-module-exports",
-    "test:build": "browserify test/collections.js -o test/build/test.build.js -t [ babelify --presets [ es2015 ] ]",
+    "test:build": "mkdir -p test/build; browserify test/collections.js -o test/build/test.build.js -t [ babelify --presets [ es2015 ] ]",
     "test:exec": "mocha-phantomjs ./test/test.html",
     "test": "npm run test:build; npm run test:exec",
     "prepublish": "npm run build"
