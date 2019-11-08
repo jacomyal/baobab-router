@@ -1,6 +1,6 @@
 {
   "name": "baobab-router",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "A router for Baobab",
   "main": "baobab-router.js",
   "scripts": {
