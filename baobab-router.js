@@ -3,7 +3,7 @@
  * PRIVATE STATIC METHODS:
  * ***********************
  */
-import isEqual from 'lodash.isequal';
+const isEqual = require("lodash.isequal");
 
 /**
  * ***********************
@@ -23,11 +23,7 @@ const __defaultSolver = /:([^\/:]*)/g;
 function __compareArrays(a1, a2) {
   const l = a1.length;
 
-  if (
-    !Array.isArray(a1) ||
-    !Array.isArray(a2) ||
-    l !== a2.length
-  ) {
+  if (!Array.isArray(a1) || !Array.isArray(a2) || l !== a2.length) {
     return false;
   }
 
@@ -70,19 +66,15 @@ function __compareArrays(a1, a2) {
  */
 function __resolveURL(url, dyn = {}, qry = {}) {
   const hash = url
-    .split('/')
-    .map(s => dyn.hasOwnProperty(s) ? escape(dyn[s]) : s)
-    .join('/');
+    .split("/")
+    .map(s => (dyn.hasOwnProperty(s) ? escape(dyn[s]) : s))
+    .join("/");
   const query = Object.keys(qry)
     .filter(k => qry[k] !== null && qry[k] !== undefined)
-    .map(k => escape(k) + '=' + escape(qry[k]))
-    .join('&');
+    .map(k => escape(k) + "=" + escape(qry[k]))
+    .join("&");
 
-  return (
-    query ?
-      hash + '?' + query :
-      hash
-  );
+  return query ? hash + "?" + query : hash;
 }
 
 /**
@@ -105,11 +97,9 @@ function __resolveURL(url, dyn = {}, qry = {}) {
  * @return {string}        The cleaned path.
  */
 function __concatenatePaths(...args) {
-  return (
-    ('/' + args.map(str => str || '').join('/'))
-      .replace(/\/+/g, '/')
-      .replace(/\/+$/g, '')
-  );
+  return ("/" + args.map(str => str || "").join("/"))
+    .replace(/\/+/g, "/")
+    .replace(/\/+$/g, "");
 }
 
 /**
@@ -153,7 +143,7 @@ function __deepMerge() {
   for (let i = 0, l = arguments.length; i < l; i++) {
     const obj = arguments[i];
 
-    if (obj && typeof obj === 'object') {
+    if (obj && typeof obj === "object") {
       if (!res) {
         res = Array.isArray(obj) ? [] : {};
       }
@@ -175,7 +165,7 @@ function __deepMerge() {
 
   return {
     conflicts,
-    value: res,
+    value: res
   };
 }
 
@@ -205,8 +195,8 @@ function __deepMerge() {
  *                             false else.
  */
 function __doesHashMatch(routeHash, hash, solver) {
-  const routeArray = routeHash.split('/');
-  const hashArray = hash.replace(/\?.*$/, '').split('/');
+  const routeArray = routeHash.split("/");
+  const hashArray = hash.replace(/\?.*$/, "").split("/");
 
   // Check lengths:
   if (routeArray.length > hashArray.length) {
@@ -217,7 +207,7 @@ function __doesHashMatch(routeHash, hash, solver) {
     const match = routeArray[i].match(solver || __defaultSolver);
 
     if (
-      (!match && (routeArray[i] !== hashArray[i])) ||
+      (!match && routeArray[i] !== hashArray[i]) ||
       (match && !hashArray[i])
     ) {
       return false;
@@ -269,9 +259,9 @@ function __doesStateMatch(routeState, state, dynamics, query) {
 
     return null;
 
-  // Objects:
-  } else if (routeState && typeof routeState === 'object') {
-    if (!state || typeof state !== 'object') {
+    // Objects:
+  } else if (routeState && typeof routeState === "object") {
+    if (!state || typeof state !== "object") {
       return null;
     }
 
@@ -293,12 +283,12 @@ function __doesStateMatch(routeState, state, dynamics, query) {
 
     return results;
 
-  // Dynamics:
+    // Dynamics:
   } else if (~(dynamics || []).indexOf(routeState) && state) {
     results[routeState] = state;
     return results;
 
-  // Query:
+    // Query:
   } else if (
     ~(query || []).indexOf(routeState) &&
     !~(dynamics || []).indexOf(routeState)
@@ -306,14 +296,14 @@ function __doesStateMatch(routeState, state, dynamics, query) {
     results[routeState] = state;
     return results;
 
-  // Null / undefined cases:
+    // Null / undefined cases:
   } else if (
     (routeState === undefined || routeState === null) &&
     (state === undefined || state === null)
   ) {
     return results;
 
-  // Other scalars:
+    // Other scalars:
   } else if (routeState === state) {
     return results;
   }
@@ -343,20 +333,15 @@ function __extractPaths(state, dynamics = [], results = [], path = []) {
     if (
       state.hasOwnProperty(i) &&
       state[i] &&
-      (typeof state[i] === 'object') &&
+      typeof state[i] === "object" &&
       Object.keys(state[i]).length
     ) {
-      __extractPaths(
-        state[i],
-        dynamics,
-        results,
-        path.concat(i)
-      );
+      __extractPaths(state[i], dynamics, results, path.concat(i));
     } else {
       results.push({
         path: path.concat(i),
         value: state[i],
-        dynamic: !!~dynamics.indexOf(state[i]),
+        dynamic: !!~dynamics.indexOf(state[i])
       });
     }
   }
@@ -386,7 +371,7 @@ function __extractPaths(state, dynamics = [], results = [], path = []) {
  *                             concatenated path of the route's ancestors.
  * @return {route}             The well-formed route object.
  */
-function __makeRoutes(route, solver, baseTree, baseQuery, basePath = '') {
+function __makeRoutes(route, solver, baseTree, baseQuery, basePath = "") {
   const { value, conflicts } = __deepMerge(
     baseTree || {},
     route.state ? { state: route.state } : {}
@@ -401,9 +386,9 @@ function __makeRoutes(route, solver, baseTree, baseQuery, basePath = '') {
   route.fullQueryValues = [];
   for (const k in route.fullQuery || {}) {
     if (route.fullQuery.hasOwnProperty(k)) {
-      if (typeof route.fullQuery[k] === 'string') {
+      if (typeof route.fullQuery[k] === "string") {
         route.fullQuery[k] = {
-          match: route.fullQuery[k],
+          match: route.fullQuery[k]
         };
       }
 
@@ -417,13 +402,15 @@ function __makeRoutes(route, solver, baseTree, baseQuery, basePath = '') {
   );
 
   if (route.defaultRoute) {
-    route.fullDefaultPath =
-      __concatenatePaths(route.fullPath, route.defaultRoute);
+    route.fullDefaultPath = __concatenatePaths(
+      route.fullPath,
+      route.defaultRoute
+    );
   }
 
   if (route.routes) {
-    route.routes = route.routes.map(
-      child => __makeRoutes(
+    route.routes = route.routes.map(child =>
+      __makeRoutes(
         child,
         solver,
         route.fullTree,
@@ -434,50 +421,50 @@ function __makeRoutes(route, solver, baseTree, baseQuery, basePath = '') {
   }
 
   route.overrides =
-    route.overrides ||
-    (route.routes || []).some(child => child.overrides);
+    route.overrides || (route.routes || []).some(child => child.overrides);
 
   // Some root-specific verifications:
   if (arguments.length <= 2) {
     // Check read-only paths:
-    route.readOnly = (route.readOnly || []).map(path => ['state'].concat(path));
+    route.readOnly = (route.readOnly || []).map(path => ["state"].concat(path));
 
     // The root must have a default route:
     if (!route.defaultRoute) {
-      throw (new Error(
-        'BaobabRouter.__makeRoutes: ' +
-        'The root must have a default route.'
-      ));
+      throw new Error(
+        "BaobabRouter.__makeRoutes: " + "The root must have a default route."
+      );
     }
   }
 
   // Check that default route is valid:
   if (
     route.defaultRoute &&
-    !(route.routes || []).some(
-      child => __doesHashMatch(child.path, route.defaultRoute)
+    !(route.routes || []).some(child =>
+      __doesHashMatch(child.path, route.defaultRoute)
     )
   ) {
-    throw (new Error(
-      'BaobabRouter.__makeRoutes: ' +
-      'The default route "' + route.defaultRoute + '" does not match any ' +
-      'registered route.'
-    ));
+    throw new Error(
+      "BaobabRouter.__makeRoutes: " +
+        'The default route "' +
+        route.defaultRoute +
+        '" does not match any ' +
+        "registered route."
+    );
   }
 
-  if (!('path' in route) && !route.defaultRoute) {
-    throw (new Error(
-      'BaobabRouter.__makeRoutes: ' +
-      'A route must have either a path or a default route.'
-    ));
+  if (!("path" in route) && !route.defaultRoute) {
+    throw new Error(
+      "BaobabRouter.__makeRoutes: " +
+        "A route must have either a path or a default route."
+    );
   }
 
   // Each route must have some state restriction (except for the root):
   if (arguments.length > 2 && !route.updates.length) {
-    throw (new Error(
-      'BaobabRouter.__makeRoutes: ' +
-      'Each route should have some state restrictions.'
-    ));
+    throw new Error(
+      "BaobabRouter.__makeRoutes: " +
+        "Each route should have some state restrictions."
+    );
   }
 
   return route;
@@ -511,7 +498,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   let _hashInterval;
   let _hashListener;
   let _watcherListener;
-  let _stored = window.location.hash.replace(/^#/, '');
+  let _stored = window.location.hash.replace(/^#/, "");
 
   /* ****************
    * PRIVATE METHODS:
@@ -527,12 +514,12 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   function _checkHash(baseHash, basePath, baseRoute) {
     const route = baseRoute || _routesTree;
     const match = __doesHashMatch(route.fullPath, baseHash);
-    const hash = baseHash.replace(/\?.*$/, '').split('/');
-    const query = baseHash.replace(/^[^\?]*\??/, '');
+    const hash = baseHash.replace(/\?.*$/, "").split("/");
+    const query = baseHash.replace(/^[^\?]*\??/, "");
 
     let doCommit;
     let doForceCommit;
-    let path = basePath || '';
+    let path = basePath || "";
 
     if (!match) {
       return false;
@@ -549,72 +536,66 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     // If there is a default route, check which route it does match:
     if (match && route.defaultRoute) {
       path = route.fullDefaultPath
-        .split('/')
-        .map((str, i) => str.match(_solver) ? unescape(hash[i]) || str : str)
-        .join('/');
+        .split("/")
+        .map((str, i) => (str.match(_solver) ? unescape(hash[i]) || str : str))
+        .join("/");
 
       // The following line is no more linted, because of some circular deps on
       // the two functions:
-      _updateHash(path); //eslint-disable-line
+      _updateHash(path);
       return true;
     }
 
     // If the route matched and has no default route:
     if (match && !route.defaultRoute) {
-      const queryValues = query
-        .split('&')
-        .reduce((res, str) => {
-          const arr = str.split('=');
-          const queryObj = (route.fullQuery || {})[unescape(arr[0])] || {};
-          let value = unescape(arr[1]);
+      const queryValues = query.split("&").reduce((res, str) => {
+        const arr = str.split("=");
+        const queryObj = (route.fullQuery || {})[unescape(arr[0])] || {};
+        let value = unescape(arr[1]);
 
-          switch (queryObj.cast) {
-            case 'number':
-              value = +value;
-              break;
-            case 'boolean':
-              value = value === 'true' ? true : false;
-              break;
-            case 'base64':
-              try {
-                value = value ?
-                  JSON.parse(atob(value)) :
-                  null;
-              } catch (e) {
-                value = null;
-              }
-              break;
-            case 'json':
-              try {
-                value = value ?
-                  JSON.parse(value) :
-                  null;
-              } catch (e) {
-                value = null;
-              }
-              break;
-            default:
-              // Nothing actually...
-          }
+        switch (queryObj.cast) {
+          case "number":
+            value = +value;
+            break;
+          case "boolean":
+            value = value === "true" ? true : false;
+            break;
+          case "base64":
+            try {
+              value = value ? JSON.parse(atob(value)) : null;
+            } catch (e) {
+              value = null;
+            }
+            break;
+          case "json":
+            try {
+              value = value ? JSON.parse(value) : null;
+            } catch (e) {
+              value = null;
+            }
+            break;
+          default:
+          // Nothing actually...
+        }
 
-          if (queryObj.match) {
-            res[queryObj.match] = value;
-          }
+        if (queryObj.match) {
+          res[queryObj.match] = value;
+        }
 
-          return res;
-        }, {});
+        return res;
+      }, {});
 
       // Apply updates:
       route.updates.map(obj => {
         const update = {
           path: obj.path,
-          value: obj.value,
+          value: obj.value
         };
 
         if (obj.dynamic) {
-          update.value = hash[
-            route.fullPath.split('/').indexOf(update.value)
-          ] || queryValues[update.value];
+          update.value =
+            hash[route.fullPath.split("/").indexOf(update.value)] ||
+            queryValues[update.value];
         }
 
         if (
@@ -623,9 +604,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           ) &&
           update.path.length > 1
         ) {
-          if (
-            !isEqual(_tree.get(update.path.slice(1)), update.value)
-          ) {
+          if (!isEqual(_tree.get(update.path.slice(1)), update.value)) {
             _tree.set(update.path.slice(1), update.value);
             doCommit = true;
           } else {
@@ -638,7 +617,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
       if (doCommit) {
         _tree.commit();
       } else if (doForceCommit) {
-        _checkState(); //eslint-disable-line
+        _checkState();
       }
 
       return true;
@@ -647,12 +626,14 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
   /**
    * This function will update the hash, and execute the _checkHash method
-   * if the new hash is different from the stored one.
+   * if the new hash is different from the stored one. You can force the
+   * _checkHash call by giving `true` as second parameter.
    *
-   * @param  {string} hash The new hash.
+   * @param  {string}  hash  The new hash.
+   * @param  {boolean} force Will force the call if set to `true`.
    */
   function _updateHash(hash, force = false) {
-    if ((_stored !== hash) || force) {
+    if (_stored !== hash || force) {
       window.location.hash = hash;
 
       _stored = hash;
@@ -669,24 +650,24 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
    */
   function _checkState(basePath, baseRoute, baseTree) {
     const tree = baseTree || {
-      state: _tree.get(),
+      state: _tree.get()
     };
     const route = baseRoute || _routesTree;
 
     // Check if route match:
-    const match = baseTree ?
-      __doesStateMatch(
-        tree,
-        route.fullTree,
-        route.dynamics,
-        route.fullQueryValues
-      ) :
-      __doesStateMatch(
-        route.fullTree,
-        tree,
-        route.dynamics,
-        route.fullQueryValues
-      );
+    const match = baseTree
+      ? __doesStateMatch(
+          tree,
+          route.fullTree,
+          route.dynamics,
+          route.fullQueryValues
+        )
+      : __doesStateMatch(
+          route.fullTree,
+          tree,
+          route.dynamics,
+          route.fullQueryValues
+        );
 
     if (!match && arguments.length > 0 && !route.overrides) {
       return false;
@@ -705,32 +686,30 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     if (!arguments.length) {
       _stored = null;
 
-      const restrictedTree = __extractPaths(tree).filter(
-        obj => _routesTree.readOnly.some(
-          path => __compareArrays(obj.path, path)
+      const restrictedTree = __extractPaths(tree)
+        .filter(obj =>
+          _routesTree.readOnly.some(path => __compareArrays(obj.path, path))
         )
-      ).reduce((res, obj) => {
-        obj.path.reduce((localTree, string, i) => {
-          if (i === obj.path.length - 1) {
-            localTree[string] = obj.value;
-          } else {
-            localTree[string] =
-              localTree[string] ||
-              (
-                typeof obj.path[i + 1] === 'number' ?
-                  [] :
-                  {}
-              );
-          }
+        .reduce((res, obj) => {
+          obj.path.reduce((localTree, string, i) => {
+            if (i === obj.path.length - 1) {
+              localTree[string] = obj.value;
+            } else {
+              localTree[string] =
+                localTree[string] ||
+                (typeof obj.path[i + 1] === "number" ? [] : {});
+            }
 
-          return localTree[string];
-        }, res);
-        return res;
-      }, {});
+            return localTree[string];
+          }, res);
+          return res;
+        }, {});
 
-      if (route.routes.some(
-        child => _checkState(route.fullPath, child, restrictedTree)
-      )) {
+      if (
+        route.routes.some(child =>
+          _checkState(route.fullPath, child, restrictedTree)
+        )
+      ) {
         return true;
       }
     }
@@ -744,18 +723,18 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
           let value = match[route.fullQuery[k].match];
 
           switch (queryObj.cast) {
-            case 'json':
+            case "json":
               if (value) {
                 value = JSON.stringify(value);
               }
               break;
-            case 'base64':
+            case "base64":
               if (value) {
                 value = btoa(JSON.stringify(value));
               }
               break;
             default:
-              // Nothing actually...
+            // Nothing actually...
           }
 
           if (value !== undefined && value !== null) {
@@ -766,9 +745,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
       _updateHash(
         __resolveURL(
-          route.defaultRoute ?
-            route.fullDefaultPath :
-            route.fullPath,
+          route.defaultRoute ? route.fullDefaultPath : route.fullPath,
           match,
           query
         ),
@@ -790,7 +767,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   function kill() {
     // Hash update capture:
     if (_hashListener) {
-      window.removeEventListener('hashchange', _hashListener, false);
+      window.removeEventListener("hashchange", _hashListener, false);
     } else if (_hashInterval) {
       window.clearInterval(_hashInterval);
     }
@@ -806,28 +783,28 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
    */
   // Check that there is no router already bound to this tree:
   if (_tree.router) {
-    throw (new Error(
-      'BaobabRouter (constructor): ' +
-      'A router has already been bound to this tree.'
-    ));
+    throw new Error(
+      "BaobabRouter (constructor): " +
+        "A router has already been bound to this tree."
+    );
   }
   _tree.router = this;
 
   // Listen to the hash changes:
-  if ('onhashchange' in window) {
+  if ("onhashchange" in window) {
     _hashListener = () => {
-      const hash = window.location.hash.replace(/^#/, '');
+      const hash = window.location.hash.replace(/^#/, "");
       if (hash !== _stored) {
         _stored = hash;
         _checkHash(_stored);
       }
     };
 
-    window.addEventListener('hashchange', _hashListener, false);
+    window.addEventListener("hashchange", _hashListener, false);
   } else {
     _stored = window.location.hash;
     _hashInterval = window.setInterval(() => {
-      const hash = window.location.hash.replace(/^#/, '');
+      const hash = window.location.hash.replace(/^#/, "");
       if (hash !== _stored) {
         _stored = hash;
         _checkHash(_stored);
@@ -840,34 +817,33 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 
   _watcher = _tree.watch(
     __extractPaths(
-      _routesTree.routes.reduce(
-        function _extract(arr, child) {
+      _routesTree.routes
+        .reduce(function _extract(arr, child) {
           return (child.routes || []).reduce(
             _extract,
             arr.concat(child.updates.map(obj => obj.path.slice(1)))
           );
-        },
-        []
-      ).filter(
-        path => path && path.length
-      ).reduce((context, path) => {
-        path.reduce(
-          (localContext, key) => (key in localContext) ?
-            localContext[key] :
-            (localContext[key] = {}),
-          context
-        );
+        }, [])
+        .filter(path => path && path.length)
+        .reduce((context, path) => {
+          path.reduce(
+            (localContext, key) =>
+              key in localContext
+                ? localContext[key]
+                : (localContext[key] = {}),
+            context
+          );
 
-        return context;
-      }, {}),
+          return context;
+        }, {}),
       []
     ).reduce((result, obj, i) => {
-      result['path_' + i] = obj.path;
+      result["path_" + i] = obj.path;
       return result;
     }, {})
   );
 
-  _watcher.on('update', _watcherListener);
+  _watcher.on("update", _watcherListener);
 
   // Export publics:
   this.kill = kill;
@@ -877,7 +853,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
 };
 
 // Baobab-Router version:
-BaobabRouter.version = '2.3.0';
+BaobabRouter.version = "2.3.0";
 
 // Expose private methods for unit testing:
 BaobabRouter.__doesHashMatch = __doesHashMatch;
@@ -896,4 +872,4 @@ BaobabRouter.__defaultSolver = __defaultSolver;
  * EXPORT MODULE:
  * **************
  */
-export default BaobabRouter;
+module.exports = BaobabRouter;

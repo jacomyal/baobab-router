@@ -1,5 +1,9 @@
+import * as helpers from "./collection.helpers.js";
+import * as core from "./collection.core.js";
+import * as advanced from "./collection.advanced.js";
+
 export default {
-  helpers: require('./collection.helpers.js'),
-  core: require('./collection.core.js'),
-  advanced: require('./collection.advanced.js'),
+  helpers,
+  core,
+  advanced
 };

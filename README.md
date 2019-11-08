@@ -10,8 +10,8 @@ A route can also have children routes, and possibly can specify a default path, 
 
 When the router is instanciated, it will listen to hash and state updates:
 
- - When the state of the tree is changed, baobab-router will search for a route with matching state constraints, and fallback on the default route if none is found.
- - When the hash is changed, baobab-router will search for a route with a matching hash, and fallback on the default route if none is found. It will then apply the state constraints of the selected route to the tree.
+- When the state of the tree is changed, baobab-router will search for a route with matching state constraints, and fallback on the default route if none is found.
+- When the hash is changed, baobab-router will search for a route with a matching hash, and fallback on the default route if none is found. It will then apply the state constraints of the selected route to the tree.
 
 ## Basic example
 
@@ -20,153 +20,146 @@ Assume we have a very small application, with two generic pages (a homepage and 
 Here is how to instanciate the state tree and the related router:
 
 ```javascript
-import Baobab from 'baobab';
-import Router from 'baobab-router';
+import Baobab from "baobab";
+import Router from "baobab-router";
 
 // Instanciate Baobab tree:
 const tree = new Baobab({
   view: null,
   projectId: null,
-  projectData: null,
+  projectData: null
 });
 
 // Instanciate router:
 const router = new Router(tree, {
-  defaultRoute: '/home',
+  defaultRoute: "/home",
   routes: [
     {
-      path: '/home',
+      path: "/home",
       state: {
-        view: 'home',
-        projectId: null,
-      },
+        view: "home",
+        projectId: null
+      }
     },
     {
-      path: '/settings',
+      path: "/settings",
       state: {
-        view: 'settings',
-        projectId: null,
-      },
+        view: "settings",
+        projectId: null
+      }
     },
     {
-      path: '/project/:pid',
-      defaultRoute: '/dashboard',
+      path: "/project/:pid",
+      defaultRoute: "/dashboard",
       state: {
-        projectId: ':pid',
+        projectId: ":pid"
       },
       routes: [
         {
-          path: '/settings',
+          path: "/settings",
           state: {
-            view: 'project.settings',
-          },
+            view: "project.settings"
+          }
         },
         {
-          path: '/dashboard',
+          path: "/dashboard",
           state: {
-            view: 'project.dashboard',
-          },
-        },
-      ],
-    },
-  ],
+            view: "project.dashboard"
+          }
+        }
+      ]
+    }
+  ]
 });
 ```
 
 Once the router is instanciated, it will check the hash to update the state:
 
 ```javascript
-console.log(window.location.hash === '#/home');
-console.log(tree.get('view') === 'home');
-console.log(tree.get('projectId') === null);
+console.log(window.location.hash === "#/home");
+console.log(tree.get("view") === "home");
+console.log(tree.get("projectId") === null);
 ```
 
 In the following examples, the state does exactly match a route:
 
 ```javascript
-() => {
-  tree.set('view', 'settings');
-  tree.set('projectId', null);
-  tree.commit();
+// 1.
+tree.set("view", "settings");
+tree.set("projectId", null);
+tree.commit();
 
-  setTimeout(() => console.log(window.location.hash === '#/settings'), 0);
-}
+setTimeout(() => console.log(window.location.hash === "#/settings"), 0);
 
-() => {
-  tree.set('view', 'project.settings');
-  tree.set('projectId', '123456');
-  tree.commit();
+// 2.
+tree.set("view", "project.settings");
+tree.set("projectId", "123456");
+tree.commit();
 
-  setTimeout(() => (
-    console.log(window.location.hash === '#/project/123456/settings')
-  ), 0);
-}
+setTimeout(
+  () => console.log(window.location.hash === "#/project/123456/settings"),
+  0
+);
 
-() => {
-  window.location.hash = '/settings';
+// 3.
+window.location.hash = "/settings";
 
-  setTimeout(() => {
-    console.log(tree.get('view') === 'settings');
-    console.log(tree.get('projectId') === null);
-  }, 0);
-}
+setTimeout(() => {
+  console.log(tree.get("view") === "settings");
+  console.log(tree.get("projectId") === null);
+}, 0);
 
-() => {
-  window.location.hash = '/project/123456/dashboard';
+// 4.
+window.location.hash = "/project/123456/dashboard";
 
-  setTimeout(() => {
-    console.log(tree.get('view') === 'project.dashboard');
-    console.log(tree.get('projectId') === '123456');
-  }, 0);
-}
+setTimeout(() => {
+  console.log(tree.get("view") === "project.dashboard");
+  console.log(tree.get("projectId") === "123456");
+}, 0);
 ```
 
-In the three following examples, the state does not match any route, so the router will fallback on the default route, and update the state in consequence:
+In the following examples, the state does not match any route, so the router will fallback on the default route, and update the state in consequence:
 
 ```javascript
-() => {
-  tree.set('view', 'something irrelevant');
-  tree.set('projectId', null);
-  tree.commit();
+// 1.
+tree.set("view", "something irrelevant");
+tree.set("projectId", null);
+tree.commit();
 
-  setTimeout(() => {
-    console.log(window.location.hash === '#/home');
-    console.log(tree.get('view') === 'home');
-    console.log(tree.get('projectId') === null);
-  }, 0);
-});
+setTimeout(() => {
+  console.log(window.location.hash === "#/home");
+  console.log(tree.get("view") === "home");
+  console.log(tree.get("projectId") === null);
+}, 0);
 
-() => {
-  tree.set('view', 'something irrelevant');
-  tree.set('projectId', 123456);
-  tree.commit();
+// 2.
+tree.set("view", "something irrelevant");
+tree.set("projectId", 123456);
+tree.commit();
 
-  setTimeout(() => {
-    console.log(window.location.hash === '#/project/123456/dashboard');
-    console.log(tree.get('view') === 'project.dashboard');
-    console.log(tree.get('projectId') === 123456);
-  }, 0);
-});
+setTimeout(() => {
+  console.log(window.location.hash === "#/project/123456/dashboard");
+  console.log(tree.get("view") === "project.dashboard");
+  console.log(tree.get("projectId") === 123456);
+}, 0);
 
-() => {
-  window.location.hash = '/something/irrelevant';
+// 3.
+window.location.hash = "/something/irrelevant";
 
-  setTimeout(() => {
-    console.log(window.location.hash === '#/home');
-    console.log(tree.get('view') === 'home');
-    console.log(tree.get('projectId') === null);
-  }, 0);
-}
+setTimeout(() => {
+  console.log(window.location.hash === "#/home");
+  console.log(tree.get("view") === "home");
+  console.log(tree.get("projectId") === null);
+}, 0);
 
-() => {
-  window.location.hash = '/project/123456/irrelevant';
+// 4.
+window.location.hash = "/project/123456/irrelevant";
 
-  setTimeout(() => {
-    console.log(window.location.hash === '#/project/123456/dashboard');
-    console.log(tree.get('view') === 'project.dashboard');
-    console.log(tree.get('projectId') === 123456);
-  }, 0);
-}
+setTimeout(() => {
+  console.log(window.location.hash === "#/project/123456/dashboard");
+  console.log(tree.get("view") === "project.dashboard");
+  console.log(tree.get("projectId") === 123456);
+}, 0);
 ```
 
 ## Advanced example
@@ -174,72 +167,70 @@ In the three following examples, the state does not match any route, so the rout
 Let's take the exact same application, but with a `logged` flag in the state tree, specifying whether the user is logged in or not. To prevent any user to land on a page with the flag as `true` and receive some 403 errors or some similar undesired effects, the router will be forbidden to update the `logged` flag, using the `readOnly` root property:
 
 ```javascript
-import Baobab from 'baobab';
-import Router from 'baobab-router';
+import Baobab from "baobab";
+import Router from "baobab-router";
 
-    // Instanciate Baobab tree:
+// Instanciate Baobab tree:
 const tree = new Baobab({
   logged: false,
   view: null,
   projectId: null,
-  projectData: null,
+  projectData: null
 });
 
 // Instanciate router:
 const router = new Router(tree, {
-  defaultRoute: '/home',
+  defaultRoute: "/home",
   // The readOnly property is an array of paths:
-  readOnly: [
-    ['logged'],
-  ],
+  readOnly: [["logged"]],
   routes: [
     {
-      path: '/login',
+      path: "/login",
       state: {
         logged: false,
-        view: 'logged',
-        projectId: null,
-      },
+        view: "logged",
+        projectId: null
+      }
     },
     {
-      path: '/home',
+      path: "/home",
       state: {
         logged: true,
-        view: 'home',
-        projectId: null,
-      },
+        view: "home",
+        projectId: null
+      }
     },
     {
-      path: '/settings',
+      path: "/settings",
       state: {
         logged: true,
-        view: 'settings',
-        projectId: null,
-      },
+        view: "settings",
+        projectId: null
+      }
     },
     {
-      path: '/project/:pid',
-      defaultRoute: '/dashboard',
+      path: "/project/:pid",
+      defaultRoute: "/dashboard",
       state: {
         logged: true,
-        projectId: ':pid',
+        projectId: ":pid"
       },
       routes: [
         {
-          path: '/settings',
+          path: "/settings",
           state: {
-            view: 'project.settings',
-          },
+            view: "project.settings"
+          }
         },
         {
-          path: '/dashboard',
+          path: "/dashboard",
           state: {
-            view: 'project.dashboard',
-          },
-        },
-      ],
-    },
-  ],
+            view: "project.dashboard"
+          }
+        }
+      ]
+    }
+  ]
 });
 ```
 
@@ -248,71 +239,67 @@ Since the router cannot write the `logged` flag, it will search for the first ro
 The only route that matches is the `/login` route, so it will update the URL and the state in consequence:
 
 ```javascript
-console.log(window.location.hash === '#/login');
-console.log(tree.get('logged') === false);
-console.log(tree.get('view') === 'login');
-console.log(tree.get('projectId') === null);
+console.log(window.location.hash === "#/login");
+console.log(tree.get("logged") === false);
+console.log(tree.get("view") === "login");
+console.log(tree.get("projectId") === null);
 ```
 
 So basically, the `readOnly` paths are here to apply some more constraints to the state.
 Here is how the updated application behaves on some specific cases:
 
 ```javascript
-() => {
-  tree.set('logged', false);
-  tree.set('view', 'project.settings');
-  tree.set('projectId', '123456');
-  tree.commit();
+// 1.
+tree.set("logged", false);
+tree.set("view", "project.settings");
+tree.set("projectId", "123456");
+tree.commit();
+
+setTimeout(() => {
+  console.log(window.location.hash === "#/login");
+  console.log(tree.get("view") === "login");
+  console.log(tree.get("projectId") === null);
+}, 0);
+
+// 2.
+tree.set("logged", true);
+tree.set("view", "project.settings");
+tree.set("projectId", "123456");
+tree.commit();
+
+setTimeout(() => {
+  console.log(window.location.hash === "#/project/123456/settings");
+  console.log(tree.get("view") === "project.settings");
+  console.log(tree.get("projectId") === 123456);
+}, 0);
+
+// 3.
+tree.set("logged", false);
+tree.commit();
+
+setTimeout(() => {
+  window.location.hash = "/project/123456/settings";
 
   setTimeout(() => {
-    console.log(window.location.hash === '#/login');
-    console.log(tree.get('view') === 'login');
-    console.log(tree.get('projectId') === null);
+    console.log(window.location.hash === "#/login");
+    console.log(tree.get("view") === "login");
+    console.log(tree.get("projectId") === null);
   }, 0);
-}
+}, 0);
 
-() => {
-  tree.set('logged', true);
-  tree.set('view', 'project.settings');
-  tree.set('projectId', '123456');
-  tree.commit();
+// 4.
+tree.set("logged", true);
+tree.commit();
+
+setTimeout(() => {
+  window.location.hash = "/project/123456/settings";
 
   setTimeout(() => {
-    console.log(window.location.hash === '#/project/123456/settings');
-    console.log(tree.get('view') === 'project.settings');
-    console.log(tree.get('projectId') === 123456);
+    console.log(window.location.hash === "#/project/123456/settings");
+    console.log(tree.get("view") === "project.settings");
+    console.log(tree.get("projectId") === 123456);
   }, 0);
-}
-
-() => {
-  tree.set('logged', false);
-  tree.commit();
-
-  setTimeout(() => {
-    window.location.hash = '/project/123456/settings';
-
-    setTimeout(() => {
-      console.log(window.location.hash === '#/login');
-      console.log(tree.get('view') === 'login');
-      console.log(tree.get('projectId') === null);
-    }, 0);
-  }, 0);
-}
-
-() => {
-  tree.set('logged', true);
-  tree.commit();
-
-  setTimeout(() => {
-    window.location.hash = '/project/123456/settings';
-
-    setTimeout(() => {
-      console.log(window.location.hash === '#/project/123456/settings');
-      console.log(tree.get('view') === 'project.settings');
-      console.log(tree.get('projectId') === 123456);
-    }, 0);
-  }, 0);
-}
+}, 0);
 ```
 
 ## API specifications
@@ -324,28 +311,29 @@ The router has to be instanciated with a Baobab instance and the routes tree def
 The tree's root must respect the following schema:
 
 ```javascript
-{
-  routes: 'Array<Route>',
-  defaultRoute: 'string',
-  readOnly: '?Array<BaobabPath>'
-}
+const root = {
+  routes: "Array<Route>",
+  defaultRoute: "string",
+  readOnly: "?Array<BaobabPath>"
+};
 ```
 
 Each other route must respect the following schema:
 
 ```javascript
-{
-  path: '?string',
-  state: 'object',
-  defaultRoute: '?string',
-  routes: '?Array<Route>'
-}
+const route = {
+  path: "?string",
+  state: "object",
+  defaultRoute: "?string",
+  routes: "?Array<Route>"
+};
 ```
 
 Also, here are some rules each route must respect:
-  1. A route without a `defaultRoute` value must have a `path` value.
-  2. The `defaultRoute` value must match a child's route if provided.
-  3. The `state` object must have at least one constraint.
+
+1. A route without a `defaultRoute` value must have a `path` value.
+2. The `defaultRoute` value must match a child's route if provided.
+3. The `state` object must have at least one constraint.
 
 Finally, two baobab-router instances cannot be bound to the same baobab instance.
 
@@ -369,9 +357,9 @@ If a child has some state constraints that are overriding its parent's, the rout
 
 As previously introduced in the advanced use case, it is possible to prevent the router to update some specified paths in the state tree, by using the `readOnly` key on the routes tree's root node. This feature has been developed especially thinking about the case presented in the advanced example, and should remain to be used with caution:
 
-  - If a read-only path will store a non-boolean variable and at some point there are no route matching the current value associated to the path, the tree and the URL will be out of sync.
-  - The same issue might happen if multiple read-only paths are used, and all the different values combinations are not represented in the routes.
-  - **Baobab v2+'s monkeys have to be declared as `readOnly` if used by the router**
+- If a read-only path will store a non-boolean variable and at some point there are no route matching the current value associated to the path, the tree and the URL will be out of sync.
+- The same issue might happen if multiple read-only paths are used, and all the different values combinations are not represented in the routes.
+- **Baobab v2+'s monkeys have to be declared as `readOnly` if used by the router**
 
 ### Default routes
 
@@ -383,7 +371,7 @@ Finally, since routes with a valid `defaultRoute` value are never selected as th
 
 ## Contributions
 
-This project is currently in an experimental state, and feedbacks, advice and pull requests are very welcome. Be sure to check code linting and to add unit tests if relevant and pass them all before submitting your pull request.
+This project is currently quite stable, but feedbacks, advice and pull requests are still welcome. Be sure to use `prettier` and to add unit tests if relevant and pass them all before submitting your pull request.
 
 ```bash
 # Install the dev environment
