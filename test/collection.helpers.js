@@ -260,6 +260,28 @@ describe("BaobabRouter.__resolveURL", () => {
       "a/:b/C?e=E&f=%3Ac" // "%3A" === escape(':')
     );
   });
+
+  it("should work with custom serialization", () => {
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        "a/:b/:b",
+        { ":b": { foo: "bar"} },
+        undefined,
+        value => JSON.stringify(value)
+      ),
+      'a/{"foo":"bar"}'
+    );
+
+    assert.equal(
+      BaobabRouter.__resolveURL(
+        "a/:b/:c",
+        { ":b": 2, ":c": "C" },
+        undefined,
+        value => +value * 2
+      ),
+      "a/4/NaN",
+    );
+  });
 });
 
 describe("BaobabRouter.__compareArrays", () => {
