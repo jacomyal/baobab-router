@@ -64,10 +64,10 @@ function __compareArrays(a1, a2) {
  * @param  {?object} qry An optional object with the query values to insert.
  * @return {string}      The resolved URL.
  */
-function __resolveURL(url, dyn = {}, qry = {}) {
+function __resolveURL(url, dyn = {}, qry = {}, serialize = escape) {
   const hash = url
     .split("/")
-    .map(s => (dyn.hasOwnProperty(s) ? escape(dyn[s]) : s))
+    .map(s => (dyn.hasOwnProperty(s) ? serialize(dyn[s]) : s))
     .join("/");
   const query = Object.keys(qry)
     .filter(k => qry[k] !== null && qry[k] !== undefined)
@@ -492,6 +492,8 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
   const _tree = baobab;
   const _settings = settings || {};
   const _solver = _settings.solver || __defaultSolver;
+  const _serialize = _settings.serialize || escape;
+  const _deserialize = _settings.deserialize || unescape;
   const _routesTree = __makeRoutes(__deepMerge(routes).value, _solver);
 
   let _watcher;
@@ -537,7 +539,7 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
     if (match && route.defaultRoute) {
       path = route.fullDefaultPath
         .split("/")
-        .map((str, i) => (str.match(_solver) ? unescape(hash[i]) || str : str))
+        .map((str, i) => (str.match(_solver) ? _deserialize(hash[i]) || str : str))
         .join("/");
 
       // The following line is no more linted, because of some circular deps on
@@ -747,7 +749,8 @@ const BaobabRouter = function BaobabRouterConstr(baobab, routes, settings) {
         __resolveURL(
           route.defaultRoute ? route.fullDefaultPath : route.fullPath,
           match,
-          query
+          query,
+          _serialize
         ),
         // If updating to a default route, then it might come from an invalid
         // state. And if the same route is already set, then forcing the hash
